@@ -30,6 +30,16 @@ impl<I> Builder<I, Global, ()> {
     }
 }
 
+impl<I, A: Allocator> Builder<I, A, ()> {
+    pub fn new_in(init: I, alloc: A) -> Self {
+        Self {
+            init,
+            alloc,
+            extra: (),
+        }
+    }
+}
+
 impl<I, A: Allocator, Extra> Builder<I, A, Extra> {
     pub fn with_alloc<A2: Allocator>(self, alloc: A2) -> Builder<I, A2, Extra> {
         Builder {
