@@ -42,7 +42,10 @@ pub unsafe trait PinInit<Dst: MetaSized, Extra = ()>: Sized {
     /// ## Implementors
     ///
     /// * This method must return the same value (or diverge) each time it is called, if there are not intermediate modifications to `self`.
-    /// * If `Dst` is `Sized`, this function must not diverge or have any observable side-effects, i.e. if `Dst: Sized`, it is allowed for callers to assume the return value of this method is `()` without calling it.
+    /// * If `Self` implements `PinInit<Dst, Extra>` for additional `Extra`, this function must return the same value (or diverge) in all such implementations.
+    ///     * Note the same is not required with respect to `Dst` for types which implement `PinInit<Dst, _>` for multiple `Dst`.
+    /// * If `Dst: Sized`, this function must not diverge or have any observable side-effects.
+    /// * If `Dst: Sized`, it is allowed for callers to assume the return value of this method is `()` without calling it.
     fn metadata(&self) -> <Dst as Pointee>::Metadata;
 
     /// Initialize a `Dst` value into the provided destination.
@@ -66,6 +69,7 @@ pub unsafe trait PinInit<Dst: MetaSized, Extra = ()>: Sized {
     /// If this function returns `Ok(())`, then `*dst` must be a fully initialized `Dst`.
     ///
     /// If this function panics or returns `Err(_)`, then it should drop any partially-initialized parts of the destination.
+    /// This is not a safety requirement, but failing to do so may cause resource leaks.
     unsafe fn init(self, dst: *mut Dst, extra: Extra) -> Result<(), Self::Error>;
 }
 

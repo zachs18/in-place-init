@@ -1,5 +1,6 @@
 use crate::{Init, PinInit};
 
+/// Intialize a slice in two pieces.
 #[derive(Clone)]
 pub struct Chain<I1, I2> {
     init1: I1,
