@@ -10,6 +10,17 @@ pub struct WithExtra<T: MetaSized, I, Extra> {
     extra: Extra,
     init: I,
 }
+
+impl<T: MetaSized, I: Clone, Extra: Clone> Clone for WithExtra<T, I, Extra> {
+    fn clone(&self) -> Self {
+        Self {
+            result: self.result.clone(),
+            extra: self.extra.clone(),
+            init: self.init.clone(),
+        }
+    }
+}
+
 impl<T: MetaSized, I, Extra> WithExtra<T, I, Extra> {
     pub fn new(extra: Extra, init: I) -> Self {
         Self {

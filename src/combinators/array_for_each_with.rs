@@ -57,6 +57,7 @@ use crate::{Init, PinInit, VecExt};
 /// let rc2 = rc[0].weak.upgrade().unwrap();
 /// assert!(Rc::ptr_eq(&rc, &rc2));
 /// ```
+#[derive(Clone)]
 pub struct ArrayForEachWith<F, const N: usize> {
     func: F,
 }

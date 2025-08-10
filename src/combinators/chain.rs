@@ -1,5 +1,6 @@
 use crate::{Init, PinInit};
 
+#[derive(Clone)]
 pub struct Chain<I1, I2> {
     init1: I1,
     init2: I2,

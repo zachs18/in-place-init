@@ -12,6 +12,16 @@ pub struct Succeed<T: MetaSized, I, E> {
     init: I,
 }
 
+impl<T: MetaSized, I: Clone, E: Clone> Clone for Succeed<T, I, E> {
+    fn clone(&self) -> Self {
+        Self {
+            result: self.result.clone(),
+            err: self.err.clone(),
+            init: self.init.clone(),
+        }
+    }
+}
+
 impl<T: MetaSized, I, E> Succeed<T, I, E> {
     pub fn new(init: I) -> Self {
         Self {

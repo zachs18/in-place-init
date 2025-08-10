@@ -10,6 +10,7 @@ use crate::{Init, PinInit, PinInitExt, VecExt};
 /// );
 /// assert_eq!(*bx, [1, 3, 5]);
 /// ```
+#[derive(Clone)]
 pub struct SliceForEach<F> {
     count: usize,
     func: F,

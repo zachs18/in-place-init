@@ -8,6 +8,15 @@ pub struct Fail<T: MetaSized, E> {
     err: E,
 }
 
+impl<T: MetaSized, E: Clone> Clone for Fail<T, E> {
+    fn clone(&self) -> Self {
+        Self {
+            meta: self.meta.clone(),
+            err: self.err.clone(),
+        }
+    }
+}
+
 impl<T: MetaSized, E> Fail<T, E> {
     pub fn new(err: E) -> Self
     where

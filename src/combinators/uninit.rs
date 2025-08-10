@@ -12,6 +12,15 @@ pub struct Uninit<T: MetaSized> {
     meta: <T as Pointee>::Metadata,
 }
 
+impl<T: MetaSized> Clone for Uninit<T> {
+    fn clone(&self) -> Self {
+        Self {
+            result: self.result.clone(),
+            meta: self.meta.clone(),
+        }
+    }
+}
+
 impl<T> Uninit<MaybeUninit<T>> {
     pub fn new() -> Self {
         Self {

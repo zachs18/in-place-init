@@ -20,6 +20,15 @@ pub struct Zeroed<T: MetaSized> {
     meta: <T as Pointee>::Metadata,
 }
 
+impl<T: MetaSized> Clone for Zeroed<T> {
+    fn clone(&self) -> Self {
+        Self {
+            result: self.result.clone(),
+            meta: self.meta.clone(),
+        }
+    }
+}
+
 impl Zeroed<str> {
     pub fn new_str(length: usize) -> Zeroed<str> {
         Zeroed {

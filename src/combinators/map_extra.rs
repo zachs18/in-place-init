@@ -11,6 +11,16 @@ pub struct MapExtra<T: MetaSized, F, I> {
     init: I,
 }
 
+impl<T: MetaSized, F: Clone, I: Clone> Clone for MapExtra<T, F, I> {
+    fn clone(&self) -> Self {
+        Self {
+            result: self.result.clone(),
+            func: self.func.clone(),
+            init: self.init.clone(),
+        }
+    }
+}
+
 impl<T: MetaSized, F, I> MapExtra<T, F, I> {
     pub fn new(func: F, init: I) -> Self {
         Self {
