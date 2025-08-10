@@ -100,6 +100,10 @@ pub trait PinInitExt<Dst: MetaSized, Extra = ()>: Sized + PinInit<Dst, Extra> {
     unsafe fn assert_pinned(self) -> AssertPinned<Dst, Extra, Self> {
         unsafe { AssertPinned::new_unchecked(self) }
     }
+
+    fn succeed<E>(self) -> Succeed<Dst, Self, E> {
+        Succeed::new(self)
+    }
 }
 impl<Dst: MetaSized, Extra, I: PinInit<Dst, Extra>> PinInitExt<Dst, Extra> for I {}
 
