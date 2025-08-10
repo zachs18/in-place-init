@@ -66,18 +66,17 @@ fn main() {
     dbg!(rc);
 
     let rc =
-        in_place_init::rc_new::<[String]>(in_place_init::SliceForEach::new(42, |x| format!("{x}")));
+        in_place_init::rc_new::<[String]>(in_place_init::slice_for_each(42, |x| format!("{x}")));
     println!("{rc:?}");
 
     _ = std::panic::catch_unwind(|| {
-        let rc =
-            in_place_init::try_rc_new::<[String], _>(in_place_init::SliceForEach::new(42, |x| {
-                if x == 30 {
-                    panic!()
-                }
-                format!("{x}")
-            }))
-            .unwrap();
+        let rc = in_place_init::try_rc_new::<[String], _>(in_place_init::slice_for_each(42, |x| {
+            if x == 30 {
+                panic!()
+            }
+            format!("{x}")
+        }))
+        .unwrap();
         println!("{rc:?}");
     });
 
@@ -87,7 +86,7 @@ fn main() {
 
     #[inline(never)]
     pub fn fooo() -> Box<[[[usize; 1024]; 1024]]> {
-        in_place_init::new_boxed(in_place_init::array_for_each::<_, 128>(|x| {
+        in_place_init::new_boxed(in_place_init::array_for_each::<128, _>(|x| {
             in_place_init::array_for_each(move |y| {
                 in_place_init::array_for_each(move |z| x * 100000000 + y * 10000 + z)
             })

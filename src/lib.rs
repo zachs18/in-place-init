@@ -19,6 +19,8 @@ mod combinators;
 
 mod allocation;
 
+mod util;
+
 /// A trait for pinned in-place initializers.
 ///
 /// # Safety
@@ -289,24 +291,28 @@ unsafe impl<T, I: ExactSizeIterator<Item = T>, Extra> PinInit<[T], Extra> for Fr
 }
 unsafe impl<T, I: ExactSizeIterator<Item = T>, Extra> Init<[T], Extra> for FromIter<I> {}
 
-pub use combinators::array_for_each::ArrayForEach;
-pub fn array_for_each<F, const N: usize>(func: F) -> ArrayForEach<F, N> {
-    ArrayForEach::new(func)
+use combinators::repeat::Repeat;
+pub fn array_repeat<const N: usize, I>(init: I) -> Repeat<I, ConstLength<N>> {
+    Repeat::new_array(init)
+}
+pub fn slice_repeat<I>(length: usize, init: I) -> Repeat<I, RuntimeLength> {
+    Repeat::new_slice(length, init)
 }
 
-pub use combinators::slice_for_each::SliceForEach;
-pub fn slice_for_each<F>(count: usize, func: F) -> SliceForEach<F> {
-    SliceForEach::new(count, func)
+use combinators::for_each::ForEach;
+pub fn array_for_each<const N: usize, F>(func: F) -> ForEach<F, ConstLength<N>> {
+    ForEach::new_array(func)
+}
+pub fn slice_for_each<F>(length: usize, func: F) -> ForEach<F, RuntimeLength> {
+    ForEach::new_slice(length, func)
 }
 
-pub use combinators::array_for_each_with::ArrayForEachWith;
-pub fn array_for_each_with<F, const N: usize>(func: F) -> ArrayForEachWith<F, N> {
-    ArrayForEachWith::new(func)
+pub use combinators::for_each_with::ForEachWith;
+pub fn array_for_each_with<const N: usize, F>(func: F) -> ForEachWith<F, ConstLength<N>> {
+    ForEachWith::new_array(func)
 }
-
-pub use combinators::slice_for_each_with::SliceForEachWith;
-pub fn slice_for_each_with<F>(count: usize, func: F) -> SliceForEachWith<F> {
-    SliceForEachWith::new(count, func)
+pub fn slice_for_each_with<F>(length: usize, func: F) -> ForEachWith<F, RuntimeLength> {
+    ForEachWith::new_slice(length, func)
 }
 
 pub use combinators::chain::Chain;
@@ -353,6 +359,8 @@ pub use allocation::rc::{rc_new, rc_new_pinned, try_rc_new, try_rc_new_pinned};
 pub use allocation::rc::{
     rc_new_cyclic, rc_new_cyclic_pinned, try_rc_new_cyclic, try_rc_new_cyclic_pinned,
 };
+
+use crate::util::{ConstLength, RuntimeLength};
 
 fn try_initialize_with<T, Extra, E>(
     slot: &mut MaybeUninit<T>,

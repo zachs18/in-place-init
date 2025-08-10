@@ -1,11 +1,14 @@
-use crate::{Init, PinInit, VecExt};
+use crate::{
+    Init, PinInit, PinInitExt, VecExt,
+    util::{ConstLength, Length, RuntimeLength},
+};
 
-/// Initialize a slice by creating an initializer for each element with extra information provided by the caller.
+/// Initialize an array or slice by creating an initializer for each element with extra information provided by the caller.
 ///
 /// For example, [`rc_new_cyclic`][crate::rc_new_cyclic] provides the `Weak` pointer as extra information
 /// to the provided intializer.
 ///
-/// This is similar to using [`With`](crate::With) within [`SliceForEach`](crate::SliceForEach),
+/// This is similar to using [`With`](crate::With) within [`ForEach`](crate::ForEach),
 /// but has better interactions with borrowing in some cases.
 ///
 /// ```rust
@@ -90,32 +93,44 @@ use crate::{Init, PinInit, VecExt};
 /// assert!(Rc::ptr_eq(&rc, &rc2));
 /// ```
 #[derive(Clone)]
-pub struct SliceForEachWith<F> {
-    count: usize,
+pub struct ForEachWith<F, L: Length> {
+    length: L,
     func: F,
 }
 
-impl<F> SliceForEachWith<F> {
-    pub fn new(count: usize, func: F) -> Self {
-        Self { count, func }
+impl<F> ForEachWith<F, RuntimeLength> {
+    pub fn new_slice(length: usize, func: F) -> Self {
+        Self {
+            length: RuntimeLength { length },
+            func,
+        }
+    }
+
+    pub fn new_array<const N: usize>(func: F) -> ForEachWith<F, ConstLength<N>> {
+        ForEachWith {
+            length: ConstLength,
+            func,
+        }
     }
 }
 
-unsafe impl<T, Extra: Clone, I: Init<T>, F: FnMut(usize, Extra) -> I> PinInit<[T], Extra>
-    for SliceForEachWith<F>
+unsafe impl<T, L: Length, Extra: Clone, I: PinInit<T>, F: FnMut(usize, Extra) -> I>
+    PinInit<[T], Extra> for ForEachWith<F, L>
 {
     type Error = I::Error;
 
     fn metadata(&self) -> usize {
-        self.count
+        self.length.length()
     }
 
     unsafe fn init(mut self, dst: *mut [T], extra: Extra) -> Result<(), Self::Error> {
         let mut buf = unsafe { noop_allocator::owning_slice::empty_from_raw(dst) };
-        let count = self.count;
-        debug_assert_eq!(buf.capacity(), self.count);
+        let count = self.length.length();
+        debug_assert_eq!(buf.capacity(), count);
         while buf.len() < count {
             let init = (self.func)(buf.len(), extra.clone());
+            // SAFETY: either `init: Init`, or we treat the destination as pinned
+            let init = unsafe { init.assert_pinned() };
             // SAFETY: there is excess capacity
             unsafe { buf.try_push_emplace_within_capacity_unchecked(init) }?;
         }
@@ -123,7 +138,23 @@ unsafe impl<T, Extra: Clone, I: Init<T>, F: FnMut(usize, Extra) -> I> PinInit<[T
         Ok(())
     }
 }
-unsafe impl<T, Extra: Clone, I: Init<T>, F: FnMut(usize, Extra) -> I> Init<[T], Extra>
-    for SliceForEachWith<F>
+unsafe impl<T, L: Length, Extra: Clone, I: Init<T>, F: FnMut(usize, Extra) -> I> Init<[T], Extra>
+    for ForEachWith<F, L>
+{
+}
+
+unsafe impl<T, const N: usize, Extra: Clone, I: PinInit<T>, F: FnMut(usize, Extra) -> I>
+    PinInit<[T; N], Extra> for ForEachWith<F, ConstLength<N>>
+{
+    type Error = I::Error;
+
+    fn metadata(&self) {}
+
+    unsafe fn init(self, dst: *mut [T; N], extra: Extra) -> Result<(), Self::Error> {
+        unsafe { <Self as PinInit<[T], Extra>>::init(self, dst, extra) }
+    }
+}
+unsafe impl<T, const N: usize, Extra: Clone, I: Init<T>, F: FnMut(usize, Extra) -> I>
+    Init<[T; N], Extra> for ForEachWith<F, ConstLength<N>>
 {
 }
