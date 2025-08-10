@@ -325,7 +325,10 @@ pub fn with_extra<T: ?Sized + MetaSized, I, Extra>(
 
 // Allocation and initialization
 
+pub use allocation::Builder;
+
 pub use allocation::boxed::{new_boxed, new_pinned, try_new_boxed, try_new_pinned};
+pub use allocation::boxed::{new_boxed_in, new_pinned_in, try_new_boxed_in, try_new_pinned_in};
 
 pub use allocation::vec::{VecExt, new_vec, try_new_vec};
 

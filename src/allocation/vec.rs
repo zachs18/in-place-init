@@ -11,6 +11,9 @@ pub fn new_vec<T>(init: impl Init<[T], Error = !>) -> Vec<T> {
     Vec::from(crate::new_boxed(init))
 }
 
+/// # Safety
+///
+/// See method documentation.
 pub unsafe trait VecExt {
     type Item;
 

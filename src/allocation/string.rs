@@ -11,12 +11,12 @@ pub fn new_string(init: impl Init<str, Error = !>) -> String {
     String::from(crate::new_boxed(init))
 }
 
-pub unsafe trait StringExt {
+pub trait StringExt {
     fn try_append_emplace<E>(&mut self, init: impl Init<str, Error = E>) -> Result<(), E>;
     fn append_emplace(&mut self, init: impl Init<str, Error = !>);
 }
 
-unsafe impl StringExt for String {
+impl StringExt for String {
     fn try_append_emplace<E>(&mut self, init: impl Init<str, Error = E>) -> Result<(), E> {
         let additional = init.metadata();
         self.reserve(additional);
