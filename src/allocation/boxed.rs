@@ -93,9 +93,7 @@ pub fn new_pinned_in<T: MetaSized, A: Allocator + 'static>(
 pub fn try_new_boxed<T: MetaSized, E>(init: impl Init<T, Error = E>) -> Result<Box<T>, E> {
     try_new_boxed_in(init, Global)
 }
-pub fn try_new_pinned<T: MetaSized, E>(
-    init: impl PinInit<T, Error = E>,
-) -> Result<Pin<Box<T>>, E> {
+pub fn try_new_pinned<T: MetaSized, E>(init: impl PinInit<T, Error = E>) -> Result<Pin<Box<T>>, E> {
     try_new_pinned_in(init, Global)
 }
 pub fn new_boxed<T: MetaSized>(init: impl Init<T, Error = !>) -> Box<T> {
