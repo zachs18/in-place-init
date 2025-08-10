@@ -18,7 +18,7 @@ use crate::{
 /// );
 /// assert_eq!(*bx, [1, 1, 1]);
 /// ```
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct Repeat<I, L: Length> {
     length: L,
     init: I,

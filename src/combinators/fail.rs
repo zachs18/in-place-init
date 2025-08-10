@@ -11,11 +11,12 @@ pub struct Fail<T: MetaSized, E> {
 impl<T: MetaSized, E: Clone> Clone for Fail<T, E> {
     fn clone(&self) -> Self {
         Self {
-            meta: self.meta.clone(),
+            meta: self.meta,
             err: self.err.clone(),
         }
     }
 }
+impl<T: MetaSized, E: Copy> Copy for Fail<T, E> {}
 
 impl<T: MetaSized, E> Fail<T, E> {
     pub fn new(err: E) -> Self

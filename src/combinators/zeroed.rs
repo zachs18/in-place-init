@@ -23,11 +23,13 @@ pub struct Zeroed<T: MetaSized> {
 impl<T: MetaSized> Clone for Zeroed<T> {
     fn clone(&self) -> Self {
         Self {
-            result: self.result.clone(),
-            meta: self.meta.clone(),
+            result: PhantomData,
+            meta: self.meta,
         }
     }
 }
+
+impl<T: MetaSized> Copy for Zeroed<T> {}
 
 impl Zeroed<str> {
     pub fn new_str(length: usize) -> Zeroed<str> {

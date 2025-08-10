@@ -13,11 +13,13 @@ pub struct IgnoreExtra<T: MetaSized, I> {
 impl<T: MetaSized, I: Clone> Clone for IgnoreExtra<T, I> {
     fn clone(&self) -> Self {
         Self {
-            result: self.result.clone(),
+            result: PhantomData,
             init: self.init.clone(),
         }
     }
 }
+
+impl<T: MetaSized, I: Copy> Copy for IgnoreExtra<T, I> {}
 
 impl<T: MetaSized, I> IgnoreExtra<T, I> {
     pub fn new(init: I) -> Self {

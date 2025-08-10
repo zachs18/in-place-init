@@ -15,11 +15,13 @@ pub struct Uninit<T: MetaSized> {
 impl<T: MetaSized> Clone for Uninit<T> {
     fn clone(&self) -> Self {
         Self {
-            result: self.result.clone(),
-            meta: self.meta.clone(),
+            result: PhantomData,
+            meta: self.meta,
         }
     }
 }
+
+impl<T: MetaSized> Copy for Uninit<T> {}
 
 impl<T> Uninit<MaybeUninit<T>> {
     pub fn new() -> Self {

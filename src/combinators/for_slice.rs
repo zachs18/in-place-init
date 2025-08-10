@@ -1,7 +1,7 @@
 use crate::{Init, PinInit};
 
 /// An initailizer for slices of a specific length, that delegates to an initializer for arrays of that length.
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct ForSlice<I, const N: usize> {
     init: I,
 }

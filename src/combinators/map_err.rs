@@ -14,7 +14,7 @@ pub struct MapErr<T: MetaSized, F, I> {
 impl<T: MetaSized, F: Clone, I: Clone> Clone for MapErr<T, F, I> {
     fn clone(&self) -> Self {
         Self {
-            result: self.result.clone(),
+            result: PhantomData,
             func: self.func.clone(),
             init: self.init.clone(),
         }

@@ -14,12 +14,14 @@ pub struct WithExtra<T: MetaSized, I, Extra> {
 impl<T: MetaSized, I: Clone, Extra: Clone> Clone for WithExtra<T, I, Extra> {
     fn clone(&self) -> Self {
         Self {
-            result: self.result.clone(),
+            result: PhantomData,
             extra: self.extra.clone(),
             init: self.init.clone(),
         }
     }
 }
+
+impl<T: MetaSized, I: Copy, Extra: Copy> Copy for WithExtra<T, I, Extra> {}
 
 impl<T: MetaSized, I, Extra> WithExtra<T, I, Extra> {
     pub fn new(extra: Extra, init: I) -> Self {

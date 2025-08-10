@@ -27,7 +27,7 @@ pub struct With<T, F> {
 impl<T, F: Clone> Clone for With<T, F> {
     fn clone(&self) -> Self {
         Self {
-            variance: self.variance.clone(),
+            variance: PhantomData,
             func: self.func.clone(),
         }
     }
