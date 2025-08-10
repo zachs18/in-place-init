@@ -41,7 +41,7 @@ unsafe impl<
 
         // Safety: The elements were just initialized.
         // Drop the first slice's elements if the second initializer panics or returns an error.
-        let guard = unsafe { noop_allocator::owning_slice::full_from_raw(dst1) };
+        let guard = unsafe { noop_allocator::owning_ref::from_raw(dst1) };
 
         let dst2 = core::ptr::slice_from_raw_parts_mut(unsafe { dst.add(len1) }, len2);
         unsafe { self.init2.init(dst2, extra) }?;

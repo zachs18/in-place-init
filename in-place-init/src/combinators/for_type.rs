@@ -4,7 +4,7 @@ use crate::{Init, PinInit};
 
 /// An initializer that is restricted to initialize a specific type.
 ///
-/// Some initializers can be used to initialize several types, e.g. [`crate::ArrayForEach`] can
+/// Some initializers can be used to initialize several types, e.g. [`crate::ForEach`] can
 /// be used to initialize a slice or an array. Also, every `Sized` type can be used to initialize
 /// itself by-value.
 ///

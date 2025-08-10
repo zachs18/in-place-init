@@ -193,7 +193,7 @@ unsafe impl<T: MetaSized, A: Allocator> PinInit<T> for Box<T, A> {
             core::ptr::copy_nonoverlapping(src.cast::<u8>(), dst.cast::<u8>(), layout.size());
 
             // Drop the pointee if deallocating/dropping the allocator panics.
-            let guard = Box::from_raw_in(dst, noop_allocator::NoopAllocator::new());
+            let guard = noop_allocator::owning_ref::from_raw(dst);
 
             if layout.size() > 0 {
                 alloc.deallocate(NonNull::new(src.cast()).unwrap(), layout);
@@ -221,7 +221,7 @@ unsafe impl<T, A: Allocator> PinInit<[T]> for Vec<T, A> {
             core::ptr::copy_nonoverlapping::<T>(self.as_ptr(), dst.cast(), count);
 
             // Drop the pointee if deallocating/dropping the empty vec panics.
-            let guard = Box::from_raw_in(dst, noop_allocator::NoopAllocator::new());
+            let guard = noop_allocator::owning_ref::from_raw(dst);
             drop(self);
             core::mem::forget(guard);
         }
@@ -287,11 +287,13 @@ unsafe impl<T, I: ExactSizeIterator<Item = T>, Extra> PinInit<[T], Extra> for Fr
     unsafe fn init(mut self, dst: *mut [T], _: Extra) -> Result<(), Self::Error> {
         let mut buf = unsafe { noop_allocator::owning_slice::empty_from_raw(dst) };
         let count = self.iter.len();
+        debug_assert_eq!(dst.len(), count);
         while buf.len() < count {
             let Some(item) = self.iter.next() else {
                 return Err(InitFromIterError::TooShort);
             };
-            buf.push(item);
+            // SAFETY: there is excess capacity
+            unsafe { buf.push_emplace_within_capacity_unchecked(item) };
         }
         core::mem::forget(buf);
         Ok(())
@@ -299,7 +301,7 @@ unsafe impl<T, I: ExactSizeIterator<Item = T>, Extra> PinInit<[T], Extra> for Fr
 }
 unsafe impl<T, I: ExactSizeIterator<Item = T>, Extra> Init<[T], Extra> for FromIter<I> {}
 
-use combinators::repeat::Repeat;
+pub use combinators::repeat::Repeat;
 pub fn array_repeat<const N: usize, I>(init: I) -> Repeat<I, ConstLength<N>> {
     Repeat::new_array(init)
 }
@@ -307,7 +309,7 @@ pub fn slice_repeat<I>(length: usize, init: I) -> Repeat<I, RuntimeLength> {
     Repeat::new_slice(length, init)
 }
 
-use combinators::for_each::ForEach;
+pub use combinators::for_each::ForEach;
 pub fn array_for_each<const N: usize, F>(func: F) -> ForEach<F, ConstLength<N>> {
     ForEach::new_array(func)
 }

@@ -93,8 +93,7 @@ impl<I, A: Allocator, Extra> Builder<I, A, Extra> {
     where
         I: Init<[T], Extra>,
     {
-        // SAFETY: `I` implements `Init<T, Extra>`
-        unsafe { boxed::new_impl(self.init, self.alloc, self.extra) }.map(Vec::from)
+        self.try_build_box().map(Vec::from)
     }
 
     pub fn build_vec<T>(self) -> Vec<T, A>
@@ -168,7 +167,7 @@ impl<I, A: Allocator, Extra> Builder<I, A, Extra> {
         I: PinInit<T, (rc::Weak<T, A>, Extra)>,
         A: Clone + 'static,
     {
-        // Safety: the rc is immediately pinned
+        // Safety: the rc is immediately pinned, the `Weak` requirement is discharged to the caller
         let rc = unsafe {
             rc::rc_new_base_impl::<T, I::Error, A, Extra, rc::WithWeakExtra<T, A>>(
                 self.init, self.alloc, self.extra,
