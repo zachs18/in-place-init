@@ -5,7 +5,7 @@ use crate::{Init, PinInit, PinInitExt, VecExt};
 /// ```rust
 /// # use in_place_init::{Init, PinInit};
 ///
-/// let bx: Box<[usize]> = in_place_init::new(
+/// let bx: Box<[usize]> = in_place_init::new_boxed(
 ///     in_place_init::slice_for_each(3, |idx| idx * 2 + 1)
 /// );
 /// assert_eq!(*bx, [1, 3, 5]);

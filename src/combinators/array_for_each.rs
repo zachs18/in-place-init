@@ -5,12 +5,12 @@ use crate::{Init, PinInit, PinInitExt, VecExt};
 /// ```rust
 /// # use in_place_init::{Init, PinInit};
 ///
-/// let bx: Box<[usize; 3]> = in_place_init::new(
+/// let bx: Box<[usize; 3]> = in_place_init::new_boxed(
 ///     in_place_init::array_for_each(|idx| idx * 2 + 1)
 /// );
 /// assert_eq!(*bx, [1, 3, 5]);
 ///
-/// let bx: Box<[usize]> = in_place_init::new(
+/// let bx: Box<[usize]> = in_place_init::new_boxed(
 ///     in_place_init::array_for_each::<_, 3>(|idx| idx * 2 + 1)
 /// );
 /// assert_eq!(*bx, [1, 3, 5]);

@@ -11,14 +11,14 @@ use crate::{Init, PinInit};
 ///
 /// ```rust
 /// # use std::rc::{Weak, Rc};
-/// # use in_place_init::{Init, PinInit};
+/// # use in_place_init::{Init};
 /// #[derive(Debug)]
 /// struct Foo {
 ///     weak: Weak<Foo>,
 /// }
 ///
 /// fn fallible_initializer(weak: Weak<Foo>) -> impl Init<Foo, Error = u32> {
-/// # <Foo as PinInit<Foo>>::map_err(Foo { weak }, |e| match e {})
+/// # in_place_init::succeed(Foo { weak })
 /// # /*
 ///     ...
 /// # */
@@ -54,8 +54,7 @@ unsafe impl<T, Extra, E, I: PinInit<T, Error = E>, F: FnOnce(Extra) -> Result<I,
 
     unsafe fn init(self, dst: *mut T, extra: Extra) -> Result<(), Self::Error> {
         let init = (self.func)(extra)?;
-        let result = unsafe { init.init(dst, ()) };
-        result.map_err(Into::into)
+        unsafe { init.init(dst, ()) }
     }
 }
 unsafe impl<T, Extra, E, I: Init<T, Error = E>, F: FnOnce(Extra) -> Result<I, E>> Init<T, Extra>

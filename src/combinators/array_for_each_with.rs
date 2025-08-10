@@ -93,3 +93,19 @@ unsafe impl<T, const N: usize, Extra: Clone, I: Init<T>, F: FnMut(usize, Extra) 
     Init<[T], Extra> for ArrayForEachWith<F, N>
 {
 }
+
+unsafe impl<T, const N: usize, Extra: Clone, I: Init<T>, F: FnMut(usize, Extra) -> I>
+    PinInit<[T; N], Extra> for ArrayForEachWith<F, N>
+{
+    type Error = I::Error;
+
+    fn metadata(&self) {}
+
+    unsafe fn init(self, dst: *mut [T; N], extra: Extra) -> Result<(), Self::Error> {
+        unsafe { <Self as PinInit<[T], Extra>>::init(self, dst, extra) }
+    }
+}
+unsafe impl<T, const N: usize, Extra: Clone, I: Init<T>, F: FnMut(usize, Extra) -> I>
+    Init<[T; N], Extra> for ArrayForEachWith<F, N>
+{
+}
