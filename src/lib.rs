@@ -90,6 +90,10 @@ pub trait PinInitExt<Dst: MetaSized, Extra = ()>: Sized + PinInit<Dst, Extra> {
     fn chain<I2: PinInit<Dst, Extra, Error = Self::Error>>(self, init2: I2) -> Chain<Self, I2> {
         Chain::new(self, init2)
     }
+
+    unsafe fn assert_pinned(self) -> AssertPinned<Dst, Extra, Self> {
+        unsafe { AssertPinned::new_unchecked(self) }
+    }
 }
 impl<Dst: MetaSized, Extra, I: PinInit<Dst, Extra>> PinInitExt<Dst, Extra> for I {}
 
@@ -245,6 +249,8 @@ pub use combinators::map_err::MapErr;
 pub fn map_err<T: MetaSized, F, I>(func: F, init: I) -> MapErr<T, F, I> {
     MapErr::new(func, init)
 }
+
+pub use combinators::assert_pinned::AssertPinned;
 
 pub struct FromIter<I: ExactSizeIterator> {
     iter: I,
