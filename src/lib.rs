@@ -323,6 +323,9 @@ pub fn with_extra<T: ?Sized + MetaSized, I, Extra>(
     WithExtra::new(extra, init)
 }
 
+pub use combinators::uninit::Uninit;
+pub use combinators::zeroed::Zeroed;
+
 // Allocation and initialization
 
 pub use allocation::Builder;
