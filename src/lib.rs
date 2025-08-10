@@ -149,7 +149,7 @@ unsafe impl<T, const N: usize> PinInit<[T]> for [T; N] {
 unsafe impl<T, const N: usize> Init<[T]> for [T; N] {}
 
 /// Initialize a place by cloning an existing value.
-unsafe impl<T: ?Sized + MetaSized + CloneToUninit> PinInit<T> for &T {
+unsafe impl<T: MetaSized + CloneToUninit> PinInit<T> for &T {
     type Error = !;
     fn metadata(&self) -> <T as Pointee>::Metadata {
         core::ptr::metadata::<T>(*self)
@@ -161,10 +161,10 @@ unsafe impl<T: ?Sized + MetaSized + CloneToUninit> PinInit<T> for &T {
         Ok(())
     }
 }
-unsafe impl<T: ?Sized + MetaSized + CloneToUninit> Init<T> for &T {}
+unsafe impl<T: MetaSized + CloneToUninit> Init<T> for &T {}
 
 /// Initialize a place by moving an existing value from a `Box`.
-unsafe impl<T: ?Sized + MetaSized, A: Allocator> PinInit<T> for Box<T, A> {
+unsafe impl<T: MetaSized, A: Allocator> PinInit<T> for Box<T, A> {
     type Error = !;
     fn metadata(&self) -> <T as Pointee>::Metadata {
         core::ptr::metadata::<T>(&**self)
@@ -187,7 +187,7 @@ unsafe impl<T: ?Sized + MetaSized, A: Allocator> PinInit<T> for Box<T, A> {
         Ok(())
     }
 }
-unsafe impl<T: ?Sized + MetaSized, A: Allocator> Init<T> for Box<T, A> {}
+unsafe impl<T: MetaSized, A: Allocator> Init<T> for Box<T, A> {}
 
 /// Initialize a slice by moving elements from a `Vec`.
 unsafe impl<T, A: Allocator> PinInit<[T]> for Vec<T, A> {
@@ -239,7 +239,7 @@ pub fn succeed<T, I, E>(init: I) -> Succeed<T, I, E> {
 }
 
 pub use combinators::map_err::MapErr;
-pub fn map_err<T: ?Sized + MetaSized, F, I>(func: F, init: I) -> MapErr<T, F, I> {
+pub fn map_err<T: MetaSized, F, I>(func: F, init: I) -> MapErr<T, F, I> {
     MapErr::new(func, init)
 }
 
@@ -306,25 +306,28 @@ pub fn chain<I1, I2>(init1: I1, init2: I2) -> Chain<I1, I2> {
 }
 
 pub use combinators::ignore_extra::IgnoreExtra;
-pub fn ignore_extra<T: ?Sized + MetaSized, I>(init: I) -> IgnoreExtra<T, I> {
+pub fn ignore_extra<T: MetaSized, I>(init: I) -> IgnoreExtra<T, I> {
     IgnoreExtra::new(init)
 }
 
 pub use combinators::map_extra::MapExtra;
-pub fn map_extra<T: ?Sized + MetaSized, F, I>(func: F, init: I) -> MapExtra<T, F, I> {
+pub fn map_extra<T: MetaSized, F, I>(func: F, init: I) -> MapExtra<T, F, I> {
     MapExtra::new(func, init)
 }
 
 pub use combinators::with_extra::WithExtra;
-pub fn with_extra<T: ?Sized + MetaSized, I, Extra>(
-    extra: Extra,
-    init: I,
-) -> WithExtra<T, I, Extra> {
+pub fn with_extra<T: MetaSized, I, Extra>(extra: Extra, init: I) -> WithExtra<T, I, Extra> {
     WithExtra::new(extra, init)
 }
 
 pub use combinators::uninit::Uninit;
+pub fn uninit<T>() -> Uninit<MaybeUninit<T>> {
+    Uninit::new()
+}
 pub use combinators::zeroed::Zeroed;
+pub fn zeroed<T>() -> Zeroed<MaybeUninit<T>> {
+    Zeroed::new()
+}
 
 // Allocation and initialization
 

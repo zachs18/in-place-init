@@ -6,13 +6,13 @@ use core::{
 use crate::{Init, PinInit};
 
 /// An initializer that will always succeed. This can be helpful to use an infallible initializer in a combinator with a fallible initializer.
-pub struct Succeed<T: ?Sized + MetaSized, I, E> {
+pub struct Succeed<T: MetaSized, I, E> {
     result: PhantomData<fn() -> T>,
     err: PhantomData<fn() -> E>,
     init: I,
 }
 
-impl<T: ?Sized + MetaSized, I, E> Succeed<T, I, E> {
+impl<T: MetaSized, I, E> Succeed<T, I, E> {
     pub fn new(init: I) -> Self {
         Self {
             result: PhantomData,
@@ -22,7 +22,7 @@ impl<T: ?Sized + MetaSized, I, E> Succeed<T, I, E> {
     }
 }
 
-unsafe impl<T: ?Sized + MetaSized, Extra, E, I: PinInit<T, Extra, Error = !>> PinInit<T, Extra>
+unsafe impl<T: MetaSized, Extra, E, I: PinInit<T, Extra, Error = !>> PinInit<T, Extra>
     for Succeed<T, I, E>
 {
     type Error = E;
@@ -37,7 +37,7 @@ unsafe impl<T: ?Sized + MetaSized, Extra, E, I: PinInit<T, Extra, Error = !>> Pi
     }
 }
 
-unsafe impl<T: ?Sized + MetaSized, Extra, E, I: Init<T, Extra, Error = !>> Init<T, Extra>
+unsafe impl<T: MetaSized, Extra, E, I: Init<T, Extra, Error = !>> Init<T, Extra>
     for Succeed<T, I, E>
 {
 }

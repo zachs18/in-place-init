@@ -5,12 +5,12 @@ use core::{
 
 use crate::{Init, PinInit};
 
-pub struct WithExtra<T: ?Sized + MetaSized, I, Extra> {
+pub struct WithExtra<T: MetaSized, I, Extra> {
     result: PhantomData<fn() -> T>,
     extra: Extra,
     init: I,
 }
-impl<T: ?Sized + MetaSized, I, Extra> WithExtra<T, I, Extra> {
+impl<T: MetaSized, I, Extra> WithExtra<T, I, Extra> {
     pub fn new(extra: Extra, init: I) -> Self {
         Self {
             result: PhantomData,
@@ -20,7 +20,7 @@ impl<T: ?Sized + MetaSized, I, Extra> WithExtra<T, I, Extra> {
     }
 }
 
-unsafe impl<T: ?Sized + MetaSized, Extra, E, I: PinInit<T, Extra, Error = E>> PinInit<T>
+unsafe impl<T: MetaSized, Extra, E, I: PinInit<T, Extra, Error = E>> PinInit<T>
     for WithExtra<T, I, Extra>
 {
     type Error = E;
@@ -34,7 +34,7 @@ unsafe impl<T: ?Sized + MetaSized, Extra, E, I: PinInit<T, Extra, Error = E>> Pi
     }
 }
 
-unsafe impl<T: ?Sized + MetaSized, Extra, E, I: Init<T, Extra, Error = E>> Init<T>
+unsafe impl<T: MetaSized, Extra, E, I: Init<T, Extra, Error = E>> Init<T>
     for WithExtra<T, I, Extra>
 {
 }

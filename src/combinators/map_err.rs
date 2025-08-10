@@ -5,13 +5,13 @@ use core::{
 
 use crate::{Init, PinInit};
 
-pub struct MapErr<T: ?Sized + MetaSized, F, I> {
+pub struct MapErr<T: MetaSized, F, I> {
     result: PhantomData<fn() -> T>,
     func: F,
     init: I,
 }
 
-impl<T: ?Sized + MetaSized, F, I> MapErr<T, F, I> {
+impl<T: MetaSized, F, I> MapErr<T, F, I> {
     pub fn new(func: F, init: I) -> Self {
         Self {
             result: PhantomData,
@@ -22,7 +22,7 @@ impl<T: ?Sized + MetaSized, F, I> MapErr<T, F, I> {
 }
 
 unsafe impl<
-    T: ?Sized + MetaSized,
+    T: MetaSized,
     Extra,
     E1,
     E2,
@@ -43,7 +43,7 @@ unsafe impl<
 }
 
 unsafe impl<
-    T: ?Sized + MetaSized,
+    T: MetaSized,
     Extra,
     E1,
     E2,

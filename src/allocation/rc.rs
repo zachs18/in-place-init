@@ -7,17 +7,17 @@ use alloc::{
 
 use crate::{Init, PinInit};
 
-trait MaybeWeakExtra<T: ?Sized + MetaSized, A: Allocator> {
+trait MaybeWeakExtra<T: MetaSized, A: Allocator> {
     fn make(weak: &rc::Weak<T, A>) -> Self;
 }
 
-impl<T: ?Sized + MetaSized, A: Allocator + Clone> MaybeWeakExtra<T, A> for rc::Weak<T, A> {
+impl<T: MetaSized, A: Allocator + Clone> MaybeWeakExtra<T, A> for rc::Weak<T, A> {
     fn make(weak: &rc::Weak<T, A>) -> Self {
         weak.clone()
     }
 }
 
-impl<T: ?Sized + MetaSized, A: Allocator> MaybeWeakExtra<T, A> for () {
+impl<T: MetaSized, A: Allocator> MaybeWeakExtra<T, A> for () {
     fn make(_weak: &rc::Weak<T, A>) -> Self {}
 }
 
@@ -25,7 +25,7 @@ impl<T: ?Sized + MetaSized, A: Allocator> MaybeWeakExtra<T, A> for () {
 ///
 /// Either `init` implements `Init`, or the returned `Rc` is immediately pinned.
 unsafe fn rc_new_base_impl<
-    T: ?Sized + MetaSized,
+    T: MetaSized,
     E,
     A: Allocator + Clone,
     CyclicWeak: MaybeWeakExtra<T, A>,
@@ -82,14 +82,14 @@ unsafe fn rc_new_base_impl<
     }
 }
 
-pub fn try_rc_new<T: ?Sized + MetaSized, E>(init: impl Init<T, Error = E>) -> Result<Rc<T>, E> {
+pub fn try_rc_new<T: MetaSized, E>(init: impl Init<T, Error = E>) -> Result<Rc<T>, E> {
     // Safety: `init` implements `Init<T>`
     unsafe { rc_new_base_impl::<T, E, Global, ()>(init, Global) }
 }
-pub fn rc_new<T: ?Sized + MetaSized>(init: impl Init<T, Error = !>) -> Rc<T> {
+pub fn rc_new<T: MetaSized>(init: impl Init<T, Error = !>) -> Rc<T> {
     try_rc_new(init).unwrap_or_else(|e| match e {})
 }
-pub fn try_rc_new_pinned<T: ?Sized + MetaSized, E>(
+pub fn try_rc_new_pinned<T: MetaSized, E>(
     init: impl PinInit<T, Error = E>,
 ) -> Result<Pin<Rc<T>>, E> {
     // Safety: the `Rc` is immediately pinned
@@ -97,12 +97,12 @@ pub fn try_rc_new_pinned<T: ?Sized + MetaSized, E>(
     // SAFETY: No other code has had access to this `Rc`.
     Ok(unsafe { Pin::new_unchecked(rc) })
 }
-pub fn rc_new_pinned<T: ?Sized + MetaSized>(init: impl PinInit<T, Error = !>) -> Pin<Rc<T>> {
+pub fn rc_new_pinned<T: MetaSized>(init: impl PinInit<T, Error = !>) -> Pin<Rc<T>> {
     try_rc_new_pinned(init).unwrap_or_else(|e| match e {})
 }
 
 /// Create a new `Rc<T>` while giving you a `Weak<T>` to the allocation.
-pub fn try_rc_new_cyclic<T: ?Sized + MetaSized, E>(
+pub fn try_rc_new_cyclic<T: MetaSized, E>(
     init: impl Init<T, rc::Weak<T>, Error = E>,
 ) -> Result<Rc<T>, E> {
     // Safety: `init` implements `Init<T>`
@@ -110,7 +110,7 @@ pub fn try_rc_new_cyclic<T: ?Sized + MetaSized, E>(
 }
 
 /// Create a new `Rc<T>` while giving you a `Weak<T>` to the allocation.
-pub fn rc_new_cyclic<T: ?Sized + MetaSized>(init: impl Init<T, rc::Weak<T>, Error = !>) -> Rc<T> {
+pub fn rc_new_cyclic<T: MetaSized>(init: impl Init<T, rc::Weak<T>, Error = !>) -> Rc<T> {
     try_rc_new_cyclic(init).unwrap_or_else(|e| match e {})
 }
 
@@ -119,7 +119,7 @@ pub fn rc_new_cyclic<T: ?Sized + MetaSized>(init: impl Init<T, rc::Weak<T>, Erro
 /// # Safety
 ///
 /// `init` must treat the `Weak`s passed to it as pinned.
-pub unsafe fn try_rc_new_cyclic_pinned<T: ?Sized + MetaSized, E>(
+pub unsafe fn try_rc_new_cyclic_pinned<T: MetaSized, E>(
     init: impl PinInit<T, rc::Weak<T>, Error = E>,
 ) -> Result<Pin<Rc<T>>, E> {
     // Safety: the `Rc` is immediately pinned
@@ -134,7 +134,7 @@ pub unsafe fn try_rc_new_cyclic_pinned<T: ?Sized + MetaSized, E>(
 /// # Safety
 ///
 /// `init` must treat the `Weak`s passed to it as pinned.
-pub unsafe fn rc_new_cyclic_pinned<T: ?Sized + MetaSized>(
+pub unsafe fn rc_new_cyclic_pinned<T: MetaSized>(
     init: impl PinInit<T, rc::Weak<T>, Error = !>,
 ) -> Pin<Rc<T>> {
     // SAFETY: discharged to caller

@@ -10,7 +10,7 @@ use crate::{Init, PinInit};
 /// # Safety
 ///
 /// Either `init` implements `Init<T, Extra>`, or the returned `Box` is immediately pinned.
-pub(super) unsafe fn new_impl<T: ?Sized + MetaSized, E, A: Allocator, Extra>(
+pub(super) unsafe fn new_impl<T: MetaSized, E, A: Allocator, Extra>(
     init: impl PinInit<T, Extra, Error = E>,
     alloc: A,
     extra: Extra,
@@ -63,44 +63,44 @@ pub(super) unsafe fn new_impl<T: ?Sized + MetaSized, E, A: Allocator, Extra>(
     }
 }
 
-pub fn try_new_boxed_in<T: ?Sized + MetaSized, E, A: Allocator>(
+pub fn try_new_boxed_in<T: MetaSized, E, A: Allocator>(
     init: impl Init<T, Error = E>,
     alloc: A,
 ) -> Result<Box<T, A>, E> {
     // Safety: `init` implements `Init<T>`
     unsafe { new_impl(init, alloc, ()) }
 }
-pub fn try_new_pinned_in<T: ?Sized + MetaSized, E, A: Allocator + 'static>(
+pub fn try_new_pinned_in<T: MetaSized, E, A: Allocator + 'static>(
     init: impl PinInit<T, Error = E>,
     alloc: A,
 ) -> Result<Pin<Box<T, A>>, E> {
     // Safety: the box is immediately pinned
     unsafe { new_impl(init, alloc, ()).map(Box::into_pin) }
 }
-pub fn new_boxed_in<T: ?Sized + MetaSized, A: Allocator>(
+pub fn new_boxed_in<T: MetaSized, A: Allocator>(
     init: impl Init<T, Error = !>,
     alloc: A,
 ) -> Box<T, A> {
     try_new_boxed_in(init, alloc).unwrap_or_else(|e| match e {})
 }
-pub fn new_pinned_in<T: ?Sized + MetaSized, A: Allocator + 'static>(
+pub fn new_pinned_in<T: MetaSized, A: Allocator + 'static>(
     init: impl PinInit<T, Error = !>,
     alloc: A,
 ) -> Pin<Box<T, A>> {
     try_new_pinned_in(init, alloc).unwrap_or_else(|e| match e {})
 }
 
-pub fn try_new_boxed<T: ?Sized + MetaSized, E>(init: impl Init<T, Error = E>) -> Result<Box<T>, E> {
+pub fn try_new_boxed<T: MetaSized, E>(init: impl Init<T, Error = E>) -> Result<Box<T>, E> {
     try_new_boxed_in(init, Global)
 }
-pub fn try_new_pinned<T: ?Sized + MetaSized, E>(
+pub fn try_new_pinned<T: MetaSized, E>(
     init: impl PinInit<T, Error = E>,
 ) -> Result<Pin<Box<T>>, E> {
     try_new_pinned_in(init, Global)
 }
-pub fn new_boxed<T: ?Sized + MetaSized>(init: impl Init<T, Error = !>) -> Box<T> {
+pub fn new_boxed<T: MetaSized>(init: impl Init<T, Error = !>) -> Box<T> {
     try_new_boxed_in(init, Global).unwrap_or_else(|e| match e {})
 }
-pub fn new_pinned<T: ?Sized + MetaSized>(init: impl PinInit<T, Error = !>) -> Pin<Box<T>> {
+pub fn new_pinned<T: MetaSized>(init: impl PinInit<T, Error = !>) -> Pin<Box<T>> {
     try_new_pinned_in(init, Global).unwrap_or_else(|e| match e {})
 }
