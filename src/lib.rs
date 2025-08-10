@@ -348,6 +348,16 @@ pub fn zeroed<T>() -> Zeroed<MaybeUninit<T>> {
     Zeroed::new()
 }
 
+pub use combinators::for_type::ForType;
+pub fn for_type<T: MetaSized, I>(init: I) -> ForType<T, I> {
+    ForType::new(init)
+}
+
+pub use combinators::for_slice::ForSlice;
+pub fn for_slice<const N: usize, I>(init: I) -> ForSlice<I, N> {
+    ForSlice::new(init)
+}
+
 // Allocation and initialization
 
 pub use allocation::Builder;

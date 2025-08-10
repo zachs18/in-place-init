@@ -19,4 +19,7 @@ pub(crate) mod chain;
 pub(crate) mod uninit;
 pub(crate) mod zeroed;
 
+pub(crate) mod for_slice;
+pub(crate) mod for_type;
+
 pub(crate) mod assert_pinned;
