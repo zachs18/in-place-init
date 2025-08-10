@@ -5,6 +5,7 @@ use crate::{Init, PinInit};
 /// Initialize a sized place by fallibly creating an initializer with extra information provided by the caller.
 ///
 /// The error type of the returned initializer must be the same as the error type of the callback.
+/// If necessary, you can change the error type with [`map_err`][crate::map_err] or [`succeed`][crate::succeed].
 ///
 /// For example, [`try_rc_new_cyclic`][crate::try_rc_new_cyclic] provides the `Weak` pointer as extra information
 /// to the provided intializer.
