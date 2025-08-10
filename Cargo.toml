@@ -1,0 +1,5 @@
+[workspace]
+members = [
+    "in-place-init",
+]
+resolver = "3"
