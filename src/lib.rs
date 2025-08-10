@@ -72,7 +72,10 @@ pub trait PinInitExt<Dst: MetaSized, Extra = ()>: Sized + PinInit<Dst, Extra> {
         MapErr::new(func, self)
     }
 
-    fn map_extra<E, F: FnOnce(E) -> Extra>(self, func: F) -> MapExtra<Dst, F, Self> {
+    fn map_extra<E, F: FnOnce(E) -> Result<Extra, Self::Error>>(
+        self,
+        func: F,
+    ) -> MapExtra<Dst, F, Self> {
         MapExtra::new(func, self)
     }
 

@@ -39,6 +39,7 @@ fn main() {
     dbg!(bx);
 
     #[derive(Debug)]
+    #[allow(unused)]
     struct Foo {
         weak: Weak<Foo>,
     }
@@ -47,6 +48,7 @@ fn main() {
     dbg!(rc);
 
     #[derive(Debug)]
+    #[allow(unused)]
     struct Bar {
         idx: usize,
         weak: Weak<[Bar]>,
@@ -85,7 +87,7 @@ fn main() {
 
     #[inline(never)]
     pub fn fooo() -> Box<[[[usize; 1024]; 1024]]> {
-        in_place_init::new_boxed(in_place_init::array_for_each::<_, 3>(|x| {
+        in_place_init::new_boxed(in_place_init::array_for_each::<_, 128>(|x| {
             in_place_init::array_for_each(move |y| {
                 in_place_init::array_for_each(move |z| x * 100000000 + y * 10000 + z)
             })
@@ -93,5 +95,18 @@ fn main() {
     }
     let bx = fooo();
 
+    println!("{bx:p}");
     drop(bx);
+
+    #[cfg(feature = "bytemuck")]
+    {
+        #[inline(never)]
+        pub fn baaar() -> Box<[[[usize; 1024]; 1024]]> {
+            in_place_init::new_boxed(in_place_init::Zeroed::new_zeroable_slice(128))
+        }
+        let bx = baaar();
+
+        println!("{bx:p}");
+        drop(bx);
+    }
 }
