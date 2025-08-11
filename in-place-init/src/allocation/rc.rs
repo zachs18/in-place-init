@@ -5,54 +5,37 @@ pub(crate) use alloc::rc::{Rc, Weak};
 
 use crate::{Init, PinInit};
 
-pub(crate) unsafe trait MaybeWeakExtra<T: MetaSized, A: Allocator, InputExtra = ()>:
-    Sized
-{
+pub(crate) trait MaybeWeakExtra<T: MetaSized, A: Allocator, InputExtra = ()>: Sized {
     type OutputExtra: Sized;
-    unsafe fn make(value_ptr: *mut T, alloc: &A, input: InputExtra) -> (Self, Self::OutputExtra);
-    fn forget_weak(self);
+    fn make(weak: &Weak<T, A>, input: InputExtra) -> Self::OutputExtra;
 }
 
-pub(crate) struct WeakExtra<T: MetaSized, A: Allocator>(Weak<T, A>);
+pub(crate) struct WeakExtra;
 
-unsafe impl<T: MetaSized, A: Allocator + Clone> MaybeWeakExtra<T, A> for WeakExtra<T, A> {
+impl<T: MetaSized, A: Allocator + Clone> MaybeWeakExtra<T, A> for WeakExtra {
     type OutputExtra = Weak<T, A>;
 
-    unsafe fn make(value_ptr: *mut T, alloc: &A, _: ()) -> (Self, Weak<T, A>) {
-        let val = unsafe { Weak::from_raw_in(value_ptr, alloc.clone()) };
-        (Self(val.clone()), val)
-    }
-    fn forget_weak(self) {
-        core::mem::forget(self.0);
+    fn make(weak: &Weak<T, A>, _: ()) -> Weak<T, A> {
+        weak.clone()
     }
 }
 
 pub(crate) struct NonWeakExtra;
 
-unsafe impl<T: MetaSized, A: Allocator, Extra> MaybeWeakExtra<T, A, Extra> for NonWeakExtra {
+impl<T: MetaSized, A: Allocator, Extra> MaybeWeakExtra<T, A, Extra> for NonWeakExtra {
     type OutputExtra = Extra;
 
-    unsafe fn make(_value_ptr: *mut T, _alloc: &A, input: Extra) -> (Self, Extra) {
-        (Self, input)
+    fn make(_weak: &Weak<T, A>, input: Extra) -> Extra {
+        input
     }
-
-    fn forget_weak(self) {}
 }
 
-pub(crate) struct WithWeakExtra<T: MetaSized, A: Allocator>(Weak<T, A>);
+pub(crate) struct WithWeakExtra;
 
-unsafe impl<T: MetaSized, A: Allocator + Clone, Extra> MaybeWeakExtra<T, A, Extra>
-    for WithWeakExtra<T, A>
-{
+impl<T: MetaSized, A: Allocator + Clone, Extra> MaybeWeakExtra<T, A, Extra> for WithWeakExtra {
     type OutputExtra = (Weak<T, A>, Extra);
-
-    unsafe fn make(value_ptr: *mut T, alloc: &A, extra: Extra) -> (Self, (Weak<T, A>, Extra)) {
-        let val = unsafe { Weak::from_raw_in(value_ptr, alloc.clone()) };
-        (Self(val.clone()), (val, extra))
-    }
-
-    fn forget_weak(self) {
-        core::mem::forget(self.0);
+    fn make(weak: &Weak<T, A>, extra: Extra) -> (Weak<T, A>, Extra) {
+        (weak.clone(), extra)
     }
 }
 
@@ -108,11 +91,13 @@ pub(crate) unsafe fn rc_new_base_impl<
     let value_ptr =
         core::ptr::from_raw_parts_mut::<T>(unsafe { base_ptr.byte_add(offset).as_ptr() }, metadata);
 
-    let (weak, extra) = unsafe { WeakExtra::make(value_ptr, &alloc, extra) };
+    let weak = unsafe { Weak::from_raw_in(value_ptr, alloc) };
+
+    let extra = WeakExtra::make(&weak, extra);
 
     match unsafe { init.init(value_ptr, extra) } {
         Ok(()) => Ok(unsafe {
-            weak.forget_weak();
+            let (_, alloc) = Weak::into_raw_with_allocator(weak);
             base_ptr.cast::<RcCounts>().as_ref().strong.set(1);
 
             Rc::from_raw_in(value_ptr, alloc)
@@ -146,7 +131,7 @@ pub fn try_rc_new_cyclic<T: MetaSized, E>(
     init: impl Init<T, Weak<T>, Error = E>,
 ) -> Result<Rc<T>, E> {
     // Safety: `init` implements `Init<T>`
-    unsafe { rc_new_base_impl::<T, E, Global, (), WeakExtra<T, Global>>(init, Global, ()) }
+    unsafe { rc_new_base_impl::<T, E, Global, (), WeakExtra>(init, Global, ()) }
 }
 
 /// Create a new `Rc<T>` while giving you a `Weak<T>` to the allocation.
@@ -163,8 +148,7 @@ pub unsafe fn try_rc_new_cyclic_pinned<T: MetaSized, E>(
     init: impl PinInit<T, Weak<T>, Error = E>,
 ) -> Result<Pin<Rc<T>>, E> {
     // Safety: the `Rc` is immediately pinned
-    let rc =
-        unsafe { rc_new_base_impl::<T, E, Global, (), WeakExtra<T, Global>>(init, Global, ()) }?;
+    let rc = unsafe { rc_new_base_impl::<T, E, Global, (), WeakExtra>(init, Global, ()) }?;
     // SAFETY: The only code that has had access to this Rc has had access as `Weak<T>`,
     // which the caller must ensure are treated as pinned.
     Ok(unsafe { Pin::new_unchecked(rc) })

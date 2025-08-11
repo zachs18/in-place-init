@@ -151,7 +151,7 @@ impl<I, A: Allocator, Extra> Builder<I, A, Extra> {
     {
         // SAFETY: `I` implements `Init<T, _>`
         unsafe {
-            rc::rc_new_base_impl::<T, I::Error, A, Extra, rc::WithWeakExtra<T, A>>(
+            rc::rc_new_base_impl::<T, I::Error, A, Extra, rc::WithWeakExtra>(
                 self.init, self.alloc, self.extra,
             )
         }
@@ -169,7 +169,7 @@ impl<I, A: Allocator, Extra> Builder<I, A, Extra> {
     {
         // Safety: the rc is immediately pinned, the `Weak` requirement is discharged to the caller
         let rc = unsafe {
-            rc::rc_new_base_impl::<T, I::Error, A, Extra, rc::WithWeakExtra<T, A>>(
+            rc::rc_new_base_impl::<T, I::Error, A, Extra, rc::WithWeakExtra>(
                 self.init, self.alloc, self.extra,
             )
         }?;
@@ -201,6 +201,7 @@ impl<I, A: Allocator, Extra> Builder<I, A, Extra> {
     }
 }
 
+#[allow(clippy::unit_arg, reason = "symmetry")]
 impl<I, A: Allocator> Builder<I, A, ()> {
     pub fn try_build_cyclic_rc<T: MetaSized>(self) -> Result<Rc<T, A>, I::Error>
     where
@@ -209,7 +210,7 @@ impl<I, A: Allocator> Builder<I, A, ()> {
     {
         // SAFETY: `I` implements `Init<T, ()>`
         unsafe {
-            rc::rc_new_base_impl::<T, I::Error, A, (), rc::WeakExtra<T, A>>(
+            rc::rc_new_base_impl::<T, I::Error, A, (), rc::WeakExtra>(
                 self.init, self.alloc, self.extra,
             )
         }
@@ -223,9 +224,9 @@ impl<I, A: Allocator> Builder<I, A, ()> {
         I: PinInit<T, rc::Weak<T, A>>,
         A: Clone + 'static,
     {
-        // Safety: the rc is immediately pinned
+        // Safety: the rc is immediately pinned, the `Weak` requirement is discharged to the caller
         let rc = unsafe {
-            rc::rc_new_base_impl::<T, I::Error, A, (), rc::WeakExtra<T, A>>(
+            rc::rc_new_base_impl::<T, I::Error, A, (), rc::WeakExtra>(
                 self.init, self.alloc, self.extra,
             )
         }?;
