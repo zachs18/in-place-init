@@ -1,7 +1,4 @@
-use core::{
-    marker::{MetaSized, PhantomData},
-    pin::Pin,
-};
+use core::marker::{MetaSized, PhantomData};
 
 use crate::{Init, PinInit};
 

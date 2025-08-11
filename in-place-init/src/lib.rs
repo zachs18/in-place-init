@@ -375,6 +375,24 @@ pub fn for_slice<const N: usize, I>(init: I) -> ForSlice<I, N> {
     ForSlice::new(init)
 }
 
+pub use combinators::then::Then;
+pub fn then<T, I, F>(init: I, func: F) -> Then<T, I, F> {
+    Then::new(init, func)
+}
+pub use combinators::then_pinned::ThenPinned;
+pub fn then_pinned<T, I, F>(init: I, func: F) -> ThenPinned<T, I, F> {
+    ThenPinned::new(init, func)
+}
+
+pub use combinators::as_bytes::AsBytes;
+pub fn as_bytes<I>(init: I) -> AsBytes<I> {
+    AsBytes::new(init)
+}
+pub use combinators::as_utf8::AsUtf8;
+pub fn as_utf8<I>(init: I) -> AsUtf8<I> {
+    AsUtf8::new(init)
+}
+
 // Allocation and initialization
 
 pub use allocation::Builder;
@@ -386,12 +404,11 @@ pub use allocation::vec::{VecExt, new_vec, try_new_vec};
 
 pub use allocation::string::{StringExt, new_string, try_new_string};
 
+use crate::util::{ConstLength, RuntimeLength};
 pub use allocation::rc::{rc_new, rc_new_pinned, try_rc_new, try_rc_new_pinned};
 pub use allocation::rc::{
     rc_new_cyclic, rc_new_cyclic_pinned, try_rc_new_cyclic, try_rc_new_cyclic_pinned,
 };
-
-use crate::util::{ConstLength, RuntimeLength};
 
 /// Initialize a `MaybeUninit<T>` and return a reference to the newly initialized slot.
 ///
