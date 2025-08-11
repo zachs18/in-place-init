@@ -14,10 +14,7 @@ pub struct Uninit<T: MetaSized> {
 
 impl<T: MetaSized> Clone for Uninit<T> {
     fn clone(&self) -> Self {
-        Self {
-            result: PhantomData,
-            meta: self.meta,
-        }
+        *self
     }
 }
 

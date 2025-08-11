@@ -22,10 +22,7 @@ pub struct Zeroed<T: MetaSized> {
 
 impl<T: MetaSized> Clone for Zeroed<T> {
     fn clone(&self) -> Self {
-        Self {
-            result: PhantomData,
-            meta: self.meta,
-        }
+        *self
     }
 }
 
