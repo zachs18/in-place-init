@@ -75,6 +75,15 @@ pub unsafe trait PinInit<Dst: MetaSized, Extra = ()>: Sized {
     unsafe fn init(self, dst: *mut Dst, extra: Extra) -> Result<(), Self::Error>;
 }
 
+/// A trait for non-pinned in-place initializers.
+///
+/// # Safety
+///
+/// See [`PinInit`].
+///
+/// [`PinInit::init`]'s caller requirements are relaxed to not necessarily treat `*dst` as pinned.
+pub unsafe trait Init<Dst: MetaSized, Extra = ()>: PinInit<Dst, Extra> {}
+
 pub trait PinInitExt<Dst: MetaSized, Extra = ()>: Sized + PinInit<Dst, Extra> {
     fn map_err<E, F: FnOnce(Self::Error) -> E>(self, func: F) -> MapErr<Dst, F, Self> {
         MapErr::new(func, self)
@@ -117,15 +126,6 @@ pub trait PinInitExt<Dst: MetaSized, Extra = ()>: Sized + PinInit<Dst, Extra> {
     }
 }
 impl<Dst: MetaSized, Extra, I: PinInit<Dst, Extra>> PinInitExt<Dst, Extra> for I {}
-
-/// A trait for non-pinned in-place initializers.
-///
-/// # Safety
-///
-/// See [`PinInit`].
-///
-/// [`PinInit::init`]'s caller requirements are relaxed to not necessarily treat `*dst` as pinned.
-pub unsafe trait Init<Dst: MetaSized, Extra = ()>: PinInit<Dst, Extra> {}
 
 // Simple initializers
 
