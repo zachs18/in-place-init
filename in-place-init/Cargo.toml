@@ -5,7 +5,9 @@ edition = "2024"
 
 [dependencies]
 bytemuck = { version = "1.23.2", optional = true }
+in-place-init-derive = { version = "0.1.0", path = "../in-place-init-derive", optional = true }
 noop-allocator = { version = "0.1.2", default-features = false, features = ["alloc"] }
 
 [features]
 bytemuck = ["dep:bytemuck"]
+macros = ["dep:in-place-init-derive"]

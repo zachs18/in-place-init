@@ -1,5 +1,5 @@
 [workspace]
 members = [
-    "in-place-init",
+    "in-place-init", "in-place-init-derive",
 ]
 resolver = "3"
