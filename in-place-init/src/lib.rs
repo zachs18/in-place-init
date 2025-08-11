@@ -8,6 +8,8 @@ extern crate alloc;
 use alloc::alloc::Allocator;
 use alloc::boxed::Box;
 use alloc::vec::Vec;
+pub use noop_allocator;
+use noop_allocator::owning_ref::OwningRef;
 
 use core::alloc::Layout;
 use core::clone::CloneToUninit;
@@ -97,6 +99,7 @@ pub trait PinInitExt<Dst: MetaSized, Extra = ()>: Sized + PinInit<Dst, Extra> {
         Chain::new(self, init2)
     }
 
+    /// Assert that `self` will be used in a way that respects pinning,
     unsafe fn assert_pinned(self) -> AssertPinned<Dst, Extra, Self> {
         unsafe { AssertPinned::new_unchecked(self) }
     }
@@ -382,18 +385,32 @@ pub use allocation::rc::{
 
 use crate::util::{ConstLength, RuntimeLength};
 
-fn try_initialize_with<T, Extra, E>(
+/// Initialize a `MaybeUninit<T>` and return a reference to the newly initialized slot.
+///
+/// Code that receives the mutable reference returned by this function needs to keep in mind
+/// that the destructor is not run for the inner data if the MaybeUninit leaves scope without
+/// a call to [`MaybeUninit::assume_init`], [`MaybeUninit::assume_init_drop`], or similar. See
+/// the docs for [`MaybeUninit::write`] for more information.
+pub fn try_initialize_with<T, Extra, E>(
     slot: &mut MaybeUninit<T>,
     init: impl Init<T, Extra, Error = E>,
     extra: Extra,
 ) -> Result<&mut T, E> {
+    // SAFETY: `slot` is uniquely borrowed, so it is valid for writes
     unsafe {
         init.init(slot.as_mut_ptr(), extra)?;
-        Ok(slot.assume_init_mut())
     }
+    // SAFETY: we just initialized `slot`
+    unsafe { Ok(slot.assume_init_mut()) }
 }
 
-fn initialize_with<T, Extra>(
+/// Initialize a `MaybeUninit<T>` and return a reference to the newly initialized slot.
+///
+/// Code that receives the mutable reference returned by this function needs to keep in mind
+/// that the destructor is not run for the inner data if the MaybeUninit leaves scope without
+/// a call to [`MaybeUninit::assume_init`], [`MaybeUninit::assume_init_drop`], or similar. See
+/// the docs for [`MaybeUninit::write`] for more information.
+pub fn initialize_with<T, Extra>(
     slot: &mut MaybeUninit<T>,
     init: impl Init<T, Extra, Error = !>,
     extra: Extra,
@@ -401,13 +418,64 @@ fn initialize_with<T, Extra>(
     try_initialize_with(slot, init, extra).unwrap_or_else(|e| match e {})
 }
 
-fn try_initialize<T, E>(
+/// Initialize a `MaybeUninit<T>` and return a reference to the newly initialized slot.
+///
+/// Code that receives the mutable reference returned by this function needs to keep in mind
+/// that the destructor is not run for the inner data if the MaybeUninit leaves scope without
+/// a call to [`MaybeUninit::assume_init`], [`MaybeUninit::assume_init_drop`], or similar. See
+/// the docs for [`MaybeUninit::write`] for more information.
+pub fn try_initialize<T, E>(
     slot: &mut MaybeUninit<T>,
     init: impl Init<T, Error = E>,
 ) -> Result<&mut T, E> {
     try_initialize_with(slot, init, ())
 }
 
-fn initialize<T>(slot: &mut MaybeUninit<T>, init: impl Init<T, Error = !>) -> &mut T {
+/// Initialize a `MaybeUninit<T>` and return a reference to the newly initialized slot.
+///
+/// Code that receives the mutable reference returned by this function needs to keep in mind
+/// that the destructor is not run for the inner data if the MaybeUninit leaves scope without
+/// a call to [`MaybeUninit::assume_init`], [`MaybeUninit::assume_init_drop`], or similar. See
+/// the docs for [`MaybeUninit::write`] for more information.
+pub fn initialize<T>(slot: &mut MaybeUninit<T>, init: impl Init<T, Error = !>) -> &mut T {
     initialize_with(slot, init, ())
+}
+
+/// Initialize a `MaybeUninit<T>` and return a owning reference to the newly initialized slot.
+pub fn try_initialize_owned_with<T, Extra, E>(
+    slot: &mut MaybeUninit<T>,
+    init: impl Init<T, Extra, Error = E>,
+    extra: Extra,
+) -> Result<OwningRef<'_, T>, E> {
+    // SAFETY: `slot` is uniquely borrowed, so it is valid for writes
+    unsafe {
+        init.init(slot.as_mut_ptr(), extra)?;
+    }
+    // SAFETY: we just initialized `slot`
+    unsafe { Ok(noop_allocator::owning_ref::from_maybeuninit(slot)) }
+}
+
+/// Initialize a `MaybeUninit<T>` and return a owning reference to the newly initialized slot.
+pub fn initialize_owned_with<T, Extra>(
+    slot: &mut MaybeUninit<T>,
+    init: impl Init<T, Extra, Error = !>,
+    extra: Extra,
+) -> OwningRef<'_, T> {
+    try_initialize_owned_with(slot, init, extra).unwrap_or_else(|e| match e {})
+}
+
+/// Initialize a `MaybeUninit<T>` and return a owning reference to the newly initialized slot.
+pub fn try_initialize_owned<T, E>(
+    slot: &mut MaybeUninit<T>,
+    init: impl Init<T, Error = E>,
+) -> Result<OwningRef<'_, T>, E> {
+    try_initialize_owned_with(slot, init, ())
+}
+
+/// Initialize a `MaybeUninit<T>` and return a owning reference to the newly initialized slot.
+pub fn initialize_owned<T>(
+    slot: &mut MaybeUninit<T>,
+    init: impl Init<T, Error = !>,
+) -> OwningRef<'_, T> {
+    try_initialize_owned_with(slot, init, ()).unwrap_or_else(|e| match e {})
 }
