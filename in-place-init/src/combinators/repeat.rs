@@ -1,5 +1,5 @@
 use crate::{
-    Init, PinInit, PinInitExt, VecExt,
+    Init, PinInit, VecExt,
     util::{ConstLength, Length, RuntimeLength},
 };
 
@@ -53,10 +53,10 @@ unsafe impl<T, L: Length, Extra: Clone, I: Clone + PinInit<T, Extra>> PinInit<[T
         let mut buf = unsafe { noop_allocator::owning_slice::empty_from_raw(dst) };
         let count = self.length.length();
         debug_assert_eq!(buf.capacity(), count);
-        while buf.len() < count {
-            let init = self.init.clone().with_extra(extra.clone());
+        let init = crate::with_extra(self.init, extra);
+        for init in core::iter::repeat_n(init, count) {
             // SAFETY: either `init: Init`, or we treat the destination as pinned
-            let init = unsafe { init.assert_pinned() };
+            let init = unsafe { crate::assert_pinned(init) };
             // SAFETY: there is excess capacity
             unsafe { buf.try_push_emplace_within_capacity_unchecked(init) }?;
         }
@@ -69,7 +69,7 @@ unsafe impl<T, L: Length, Extra: Clone, I: Clone + Init<T, Extra>> Init<[T], Ext
 {
 }
 
-unsafe impl<T, const N: usize, Extra: Clone, I: Clone + Init<T, Extra>> PinInit<[T; N], Extra>
+unsafe impl<T, const N: usize, Extra: Clone, I: Clone + PinInit<T, Extra>> PinInit<[T; N], Extra>
     for Repeat<I, ConstLength<N>>
 {
     type Error = I::Error;

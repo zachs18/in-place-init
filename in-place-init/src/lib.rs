@@ -272,6 +272,10 @@ pub fn map_err<T: MetaSized, F, I>(func: F, init: I) -> MapErr<T, F, I> {
 }
 
 pub use combinators::assert_pinned::AssertPinned;
+pub unsafe fn assert_pinned<T, Extra, I: PinInit<T, Extra>>(init: I) -> AssertPinned<T, Extra, I> {
+    // SAFETY: discharged to caller
+    unsafe { AssertPinned::new_unchecked(init) }
+}
 
 pub struct FromIter<I: ExactSizeIterator> {
     iter: I,
@@ -352,8 +356,11 @@ pub fn map_extra<T: MetaSized, F, I>(func: F, init: I) -> MapExtra<T, F, I> {
 }
 
 pub use combinators::with_extra::WithExtra;
-pub fn with_extra<T: MetaSized, I, Extra>(extra: Extra, init: I) -> WithExtra<T, I, Extra> {
-    WithExtra::new(extra, init)
+pub fn with_extra<T: MetaSized, I: PinInit<T, Extra>, Extra>(
+    init: I,
+    extra: Extra,
+) -> WithExtra<T, Extra, I> {
+    WithExtra::new(init, extra)
 }
 
 pub use combinators::uninit::Uninit;

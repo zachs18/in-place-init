@@ -5,13 +5,15 @@ use core::{
 
 use crate::{Init, PinInit};
 
-pub struct WithExtra<T: MetaSized, I, Extra> {
+pub struct WithExtra<T: MetaSized, Extra, I> {
+    /// This type needs to mention `T`, otherwise the relevant implementation
+    /// would overlap with `impl<T> PinInit<T> for T`.
     result: PhantomData<fn() -> T>,
     extra: Extra,
     init: I,
 }
 
-impl<T: MetaSized, I: Clone, Extra: Clone> Clone for WithExtra<T, I, Extra> {
+impl<T: MetaSized, Extra: Clone, I: Clone> Clone for WithExtra<T, Extra, I> {
     fn clone(&self) -> Self {
         Self {
             result: PhantomData,
@@ -21,10 +23,10 @@ impl<T: MetaSized, I: Clone, Extra: Clone> Clone for WithExtra<T, I, Extra> {
     }
 }
 
-impl<T: MetaSized, I: Copy, Extra: Copy> Copy for WithExtra<T, I, Extra> {}
+impl<T: MetaSized, Extra: Copy, I: Copy> Copy for WithExtra<T, Extra, I> {}
 
-impl<T: MetaSized, I, Extra> WithExtra<T, I, Extra> {
-    pub fn new(extra: Extra, init: I) -> Self {
+impl<T: MetaSized, Extra, I> WithExtra<T, Extra, I> {
+    pub fn new(init: I, extra: Extra) -> Self {
         Self {
             result: PhantomData,
             extra,
@@ -34,7 +36,7 @@ impl<T: MetaSized, I, Extra> WithExtra<T, I, Extra> {
 }
 
 unsafe impl<T: MetaSized, Extra, E, I: PinInit<T, Extra, Error = E>> PinInit<T>
-    for WithExtra<T, I, Extra>
+    for WithExtra<T, Extra, I>
 {
     type Error = E;
 
@@ -48,6 +50,6 @@ unsafe impl<T: MetaSized, Extra, E, I: PinInit<T, Extra, Error = E>> PinInit<T>
 }
 
 unsafe impl<T: MetaSized, Extra, E, I: Init<T, Extra, Error = E>> Init<T>
-    for WithExtra<T, I, Extra>
+    for WithExtra<T, Extra, I>
 {
 }

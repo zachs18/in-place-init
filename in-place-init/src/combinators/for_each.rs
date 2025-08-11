@@ -1,5 +1,5 @@
 use crate::{
-    Init, PinInit, PinInitExt, VecExt,
+    Init, PinInit, VecExt,
     util::{ConstLength, Length, RuntimeLength},
 };
 
@@ -53,10 +53,11 @@ unsafe impl<T, L: Length, Extra: Clone, I: PinInit<T, Extra>, F: FnMut(usize) ->
         let mut buf = unsafe { noop_allocator::owning_slice::empty_from_raw(dst) };
         let count = self.length.length();
         debug_assert_eq!(buf.capacity(), count);
-        while buf.len() < count {
-            let init = (self.func)(buf.len()).with_extra(extra.clone());
+        for (idx, extra) in core::iter::repeat_n(extra, count).enumerate() {
+            let init = (self.func)(idx);
+            let init = crate::with_extra(init, extra);
             // SAFETY: either `init: Init`, or we treat the destination as pinned
-            let init = unsafe { init.assert_pinned() };
+            let init = unsafe { crate::assert_pinned(init) };
             // SAFETY: there is excess capacity
             unsafe { buf.try_push_emplace_within_capacity_unchecked(init) }?;
         }
