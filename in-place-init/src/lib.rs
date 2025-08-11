@@ -86,44 +86,50 @@ pub unsafe trait PinInit<Dst: MetaSized, Extra = ()>: Sized {
 /// [`PinInit::init`]'s caller requirements are relaxed to not necessarily treat `*dst` as pinned.
 pub unsafe trait Init<Dst: MetaSized, Extra = ()>: PinInit<Dst, Extra> {}
 
+/// Helper methods to construct combinators from intializers.
+///
+/// The methods start with `init_` to help avoid name collisions.
 pub trait PinInitExt<Dst: MetaSized, Extra = ()>: Sized + PinInit<Dst, Extra> {
-    fn map_err<E, F: FnOnce(Self::Error) -> E>(self, func: F) -> MapErr<Dst, F, Self> {
+    fn init_map_err<E, F: FnOnce(Self::Error) -> E>(self, func: F) -> MapErr<Dst, F, Self> {
         MapErr::new(func, self)
     }
 
-    fn map_extra<E, F: FnOnce(E) -> Result<Extra, Self::Error>>(
+    fn init_map_extra<E, F: FnOnce(E) -> Result<Extra, Self::Error>>(
         self,
         func: F,
     ) -> MapExtra<Dst, F, Self> {
         MapExtra::new(func, self)
     }
 
-    fn ignore_extra(self) -> IgnoreExtra<Dst, Self> {
+    fn init_ignore_extra(self) -> IgnoreExtra<Dst, Self> {
         IgnoreExtra::new(self)
     }
 
-    fn with_extra(self, extra: Extra) -> WithExtra<Dst, Self, Extra> {
-        WithExtra::new(extra, self)
+    fn init_with_extra(self, extra: Extra) -> WithExtra<Dst, Extra, Self> {
+        WithExtra::new(self, extra)
     }
 
-    fn chain<I2: PinInit<Dst, Extra, Error = Self::Error>>(self, init2: I2) -> Chain<Self, I2> {
+    fn init_chain<I2: PinInit<Dst, Extra, Error = Self::Error>>(
+        self,
+        init2: I2,
+    ) -> Chain<Self, I2> {
         Chain::new(self, init2)
     }
 
     /// Assert that `self` will be used in a way that respects pinning,
-    unsafe fn assert_pinned(self) -> AssertPinned<Dst, Extra, Self> {
+    unsafe fn init_assert_pinned(self) -> AssertPinned<Dst, Extra, Self> {
         unsafe { AssertPinned::new_unchecked(self) }
     }
 
     /// Allow using `self` as an `Init` safely, because `Dst: Unpin`
-    fn assert_unpin(self) -> AssertPinned<Dst, Extra, Self>
+    fn init_assert_unpin(self) -> AssertPinned<Dst, Extra, Self>
     where
         Dst: Unpin,
     {
         AssertPinned::new_unpin(self)
     }
 
-    fn succeed<E>(self) -> Succeed<Dst, Self, E> {
+    fn init_succeed<E>(self) -> Succeed<Dst, Self, E> {
         Succeed::new(self)
     }
 }
