@@ -44,8 +44,10 @@ pub unsafe trait PinInit<Dst: MetaSized, Extra = ()>: Sized {
     /// ## Implementors
     ///
     /// * This method must return the same value (or diverge) each time it is called, if there are not intermediate modifications to `self`.
+    // TODO: expand on what "modifications" means: `&mut` access, not including moves or interior mutability.
     /// * If `Self` implements `PinInit<Dst, Extra>` for additional `Extra`, this function must return the same value (or diverge) in all such implementations.
     ///     * Note the same is not required with respect to `Dst` for types which implement `PinInit<Dst, _>` for multiple `Dst`.
+    /// * If `Self` implements `Clone` (or `Copy`), then any clones (or copies) must return the same value.
     /// * If `Dst: Sized`, this function must not diverge or have any observable side-effects.
     /// * If `Dst: Sized`, it is allowed for callers to assume the return value of this method is `()` without calling it.
     fn metadata(&self) -> <Dst as Pointee>::Metadata;

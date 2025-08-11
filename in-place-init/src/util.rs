@@ -2,9 +2,9 @@
 ///
 /// ## Implementors
 ///
-/// * `length` must return the same value, if there are no intermediate modifications to `self`
+/// * `length` must return the same value for `self` and clones/copies of `self`, if there are no intermediate modifications
 /// * `length` may panic or diverge
-pub unsafe trait Length {
+pub unsafe trait Length: Copy {
     fn length(&self) -> usize;
 }
 
