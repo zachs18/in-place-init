@@ -27,6 +27,17 @@ impl<T: MetaSized, Extra, I> AssertPinned<T, Extra, I> {
             init,
         }
     }
+
+    pub fn new_unpin(init: I) -> Self
+    where
+        I: PinInit<T, Extra>,
+        T: Unpin,
+    {
+        Self {
+            result: PhantomData,
+            init,
+        }
+    }
 }
 
 unsafe impl<T: MetaSized, Extra, I: PinInit<T, Extra>> PinInit<T, Extra>

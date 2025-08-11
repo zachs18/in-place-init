@@ -104,6 +104,14 @@ pub trait PinInitExt<Dst: MetaSized, Extra = ()>: Sized + PinInit<Dst, Extra> {
         unsafe { AssertPinned::new_unchecked(self) }
     }
 
+    /// Allow using `self` as an `Init` safely, because `Dst: Unpin`
+    fn assert_unpin(self) -> AssertPinned<Dst, Extra, Self>
+    where
+        Dst: Unpin,
+    {
+        AssertPinned::new_unpin(self)
+    }
+
     fn succeed<E>(self) -> Succeed<Dst, Self, E> {
         Succeed::new(self)
     }
