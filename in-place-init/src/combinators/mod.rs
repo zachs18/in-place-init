@@ -29,3 +29,5 @@ pub(crate) mod then_pinned;
 
 pub(crate) mod as_bytes;
 pub(crate) mod as_utf8;
+
+pub(crate) mod flatten;

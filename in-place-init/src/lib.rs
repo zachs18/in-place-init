@@ -408,6 +408,24 @@ pub fn as_utf8<I>(init: I) -> AsUtf8<I> {
     AsUtf8::new(init)
 }
 
+pub use combinators::flatten::Flatten;
+pub fn flatten<T, const N: usize, const M: usize, const P: usize, I>(
+    init: I,
+) -> Flatten<[[T; N]; M], [T; P], I> {
+    const {
+        assert!(usize::strict_mul(N, M) == P, "array length mismatch");
+    }
+    Flatten::new(init)
+}
+pub fn try_flatten<T, const N: usize, const M: usize, const P: usize, I>(
+    init: I,
+) -> Result<Flatten<[[T; N]; M], [T; P], I>, I> {
+    Flatten::try_new(init)
+}
+pub fn flatten_slice<T, const N: usize, I>(init: I) -> Flatten<[[T; N]], [T], I> {
+    Flatten::new_slice(init)
+}
+
 // Allocation and initialization
 
 pub use allocation::Builder;
