@@ -1,4 +1,5 @@
 use std::str::FromStr;
+use std::borrow::Cow;
 
 use proc_macro::{Span, TokenStream};
 use proc_macro2::TokenStream as TokenStream2;
@@ -130,11 +131,22 @@ pub fn derive_init(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 
     let dst_members = data_struct.fields.members();
 
+    let where_clause = match where_clause {
+        Some(wc) if !wc.predicates.is_empty() => {
+            let mut wc = Cow::Borrowed(wc);
+            if !wc.predicates.trailing_punct() {
+                wc.to_mut().predicates.push_punct(Default::default());
+            }
+            Box::new(wc) as Box<dyn quote::ToTokens>
+        }
+        _ => Box::new(TokenStream2::from_str("where").unwrap()),
+    };
+
     quote::quote! {
         #initializer_struct
 
         unsafe impl<#extra_generic #error_generic #( #generic_names, )* #impl_generics > ::in_place_init::PinInit<#struct_name #struct_generics, #extra_type> for #initailizer_name< #(#generic_names,)* >
-            where
+            #where_clause
                 #( #generic_names: ::in_place_init::PinInit<#field_tys, #extra_type, Error = #error_type>, )*
         {
             type Error = #error_type;

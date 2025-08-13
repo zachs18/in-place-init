@@ -165,4 +165,16 @@ mod foo {
         pub foo: <Self as Trait>::Assoc<Self>,
         pub tail: T,
     }
+
+    #[derive(Debug, in_place_init_derive::Init)]
+    pub(crate) struct Phooey<T> where T: ?Sized, {
+        pub foo: <Self as Trait>::Assoc<Self>,
+        pub tail: T,
+    }
+
+    #[derive(Debug, in_place_init_derive::Init)]
+    pub(crate) struct Phenomenal<T> where T: ?Sized {
+        pub foo: <Self as Trait>::Assoc<Self>,
+        pub tail: T,
+    }
 }
