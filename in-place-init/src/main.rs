@@ -123,7 +123,7 @@ fn main() {
     {
         use std::rc::Rc;
 
-        let bx: Box<foo::Bar<str>> = in_place_init::new_boxed(foo::BarInit(
+        let bx: Box<foo::Bar<42, str>> = in_place_init::new_boxed(foo::BarInit(
             in_place_init::array_for_each(|idx| idx as u8),
             "hello, world!",
         ));
@@ -136,6 +136,22 @@ fn main() {
         let rc2 = rc1.this.upgrade().unwrap();
         println!("{rc1:?}");
         assert!(Rc::ptr_eq(&rc1, &rc2));
+
+        let bx: Box<foo::Bar<20, dyn std::any::Any>> = in_place_init::new_boxed(foo::BarInit(
+            in_place_init::array_for_each({
+                let mut acc = 0;
+                move |idx| {
+                    acc += idx;
+                    acc as u8
+                }
+            }),
+            in_place_init::unsize(String::from("hello, world")),
+        ));
+        dbg!(&bx);
+        assert_eq!(
+            bx.y.downcast_ref::<String>().map(String::as_str),
+            Some("hello, world")
+        );
     }
 }
 
@@ -145,8 +161,8 @@ mod foo {
     struct Foo;
 
     #[derive(Debug, in_place_init_derive::Init)]
-    pub(crate) struct Bar<T: ?Sized> {
-        pub x: [u8; 1024],
+    pub(crate) struct Bar<const N: usize, T: ?Sized> {
+        pub x: [u8; N],
         pub y: T,
     }
 

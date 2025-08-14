@@ -6,6 +6,7 @@
 #![feature(never_type)]
 #![feature(clone_to_uninit)]
 #![feature(doc_auto_cfg)]
+#![feature(unsize)]
 #![no_std]
 
 extern crate alloc;
@@ -17,7 +18,7 @@ use noop_allocator::owning_ref::OwningRef;
 
 use core::alloc::Layout;
 use core::clone::CloneToUninit;
-use core::marker::MetaSized;
+use core::marker::{MetaSized, Unsize as UnsizeTrait};
 use core::mem::MaybeUninit;
 use core::ptr::{NonNull, Pointee};
 
@@ -412,6 +413,11 @@ pub fn try_flatten<T, const N: usize, const M: usize, const P: usize, I>(
 }
 pub fn flatten_slice<T, const N: usize, I>(init: I) -> Flatten<[[T; N]], [T], I> {
     Flatten::new_slice(init)
+}
+
+pub use combinators::unsize::Unsize;
+pub fn unsize<T: UnsizeTrait<Dst>, Dst: MetaSized, I>(init: I) -> Unsize<T, Dst, I> {
+    Unsize::new(init)
 }
 
 // Allocation and initialization
