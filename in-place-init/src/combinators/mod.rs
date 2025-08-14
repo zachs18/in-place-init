@@ -6,7 +6,6 @@ pub(crate) mod for_each_with;
 pub(crate) mod repeat;
 
 pub(crate) mod fail;
-pub(crate) mod succeed;
 
 pub(crate) mod map_err;
 

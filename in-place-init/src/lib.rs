@@ -132,10 +132,6 @@ pub trait PinInitExt<Dst: MetaSized, Error = !, Extra = ()>:
     {
         AssertPinned::new_unpin(self)
     }
-
-    fn init_succeed<E>(self) -> Succeed<Dst, Self, E> {
-        Succeed::new(self)
-    }
 }
 impl<Dst: MetaSized, Extra, I: PinInit<Dst, Extra>> PinInitExt<Dst, Extra> for I {}
 
@@ -262,11 +258,6 @@ where
     <T as Pointee>::Metadata: Default,
 {
     Fail::new(err)
-}
-
-pub use combinators::succeed::Succeed;
-pub fn succeed<T, I, E>(init: I) -> Succeed<T, I, E> {
-    Succeed::new(init)
 }
 
 pub use combinators::map_err::MapErr;
