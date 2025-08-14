@@ -55,19 +55,17 @@ impl<T, F> TryWith<T, F> {
     }
 }
 
-unsafe impl<T, Extra, E, I: PinInit<T, Error = E>, F: FnOnce(Extra) -> Result<I, E>>
-    PinInit<T, Extra> for TryWith<T, F>
+unsafe impl<T, Error, Extra, I: PinInit<T, Error>, F: FnOnce(Extra) -> Result<I, Error>>
+    PinInit<T, Error, Extra> for TryWith<T, F>
 {
-    type Error = E;
-
     fn metadata(&self) {}
 
-    unsafe fn init(self, dst: *mut T, extra: Extra) -> Result<(), Self::Error> {
+    unsafe fn init(self, dst: *mut T, extra: Extra) -> Result<(), Error> {
         let init = (self.func)(extra)?;
         unsafe { init.init(dst, ()) }
     }
 }
-unsafe impl<T, Extra, E, I: Init<T, Error = E>, F: FnOnce(Extra) -> Result<I, E>> Init<T, Extra>
-    for TryWith<T, F>
+unsafe impl<T, Error, Extra, I: Init<T, Error>, F: FnOnce(Extra) -> Result<I, Error>>
+    Init<T, Error, Extra> for TryWith<T, F>
 {
 }

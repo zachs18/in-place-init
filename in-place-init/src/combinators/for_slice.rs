@@ -12,19 +12,20 @@ impl<I, const N: usize> ForSlice<I, N> {
     }
 }
 
-unsafe impl<T, const N: usize, Extra, I: PinInit<[T; N], Extra>> PinInit<[T], Extra>
-    for ForSlice<I, N>
+unsafe impl<T, const N: usize, Error, Extra, I: PinInit<[T; N], Error, Extra>>
+    PinInit<[T], Error, Extra> for ForSlice<I, N>
 {
-    type Error = I::Error;
-
     fn metadata(&self) -> usize {
         N
     }
 
-    unsafe fn init(self, dst: *mut [T], extra: Extra) -> Result<(), Self::Error> {
+    unsafe fn init(self, dst: *mut [T], extra: Extra) -> Result<(), Error> {
         // SAFETY: discharged to caller, `dst` must have the length `N`
         unsafe { self.init.init(dst.cast(), extra) }
     }
 }
 
-unsafe impl<T, const N: usize, Extra, I: Init<[T; N], Extra>> Init<[T], Extra> for ForSlice<I, N> {}
+unsafe impl<T, const N: usize, Error, Extra, I: Init<[T; N], Error, Extra>> Init<[T], Error, Extra>
+    for ForSlice<I, N>
+{
+}

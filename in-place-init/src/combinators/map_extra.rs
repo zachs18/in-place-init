@@ -35,18 +35,16 @@ unsafe impl<
     T: MetaSized,
     Extra1,
     Extra2,
-    E,
-    F: FnOnce(Extra1) -> Result<Extra2, E>,
-    I: PinInit<T, Extra2, Error = E>,
-> PinInit<T, Extra1> for MapExtra<T, F, I>
+    Error,
+    F: FnOnce(Extra1) -> Result<Extra2, Error>,
+    I: PinInit<T, Error, Extra2>,
+> PinInit<T, Error, Extra1> for MapExtra<T, F, I>
 {
-    type Error = E;
-
     fn metadata(&self) -> <T as Pointee>::Metadata {
         self.init.metadata()
     }
 
-    unsafe fn init(self, dst: *mut T, extra: Extra1) -> Result<(), Self::Error> {
+    unsafe fn init(self, dst: *mut T, extra: Extra1) -> Result<(), Error> {
         let extra = (self.func)(extra)?;
         unsafe { self.init.init(dst, extra) }
     }
@@ -56,9 +54,9 @@ unsafe impl<
     T: MetaSized,
     Extra1,
     Extra2,
-    E,
-    F: FnOnce(Extra1) -> Result<Extra2, E>,
-    I: Init<T, Extra2, Error = E>,
-> Init<T, Extra1> for MapExtra<T, F, I>
+    Error,
+    F: FnOnce(Extra1) -> Result<Extra2, Error>,
+    I: Init<T, Error, Extra2>,
+> Init<T, Error, Extra1> for MapExtra<T, F, I>
 {
 }

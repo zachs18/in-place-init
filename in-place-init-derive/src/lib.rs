@@ -1,9 +1,8 @@
-use std::str::FromStr;
 use std::borrow::Cow;
+use std::str::FromStr;
 
-use proc_macro::{Span, TokenStream};
+use proc_macro::Span;
 use proc_macro2::TokenStream as TokenStream2;
-use quote::ToTokens;
 
 #[proc_macro_derive(Init)]
 pub fn derive_init(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
@@ -123,12 +122,6 @@ pub fn derive_init(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
         ("Extra: Clone,".parse().unwrap(), "Extra".parse().unwrap())
     };
 
-    let (error_generic, error_type): (TokenStream2, TokenStream2) = if field_count > 0 {
-        ("Error,".parse().unwrap(), "Error".parse().unwrap())
-    } else {
-        (TokenStream2::new(), "!".parse().unwrap())
-    };
-
     let dst_members = data_struct.fields.members();
 
     let where_clause = match where_clause {
@@ -145,18 +138,17 @@ pub fn derive_init(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     quote::quote! {
         #initializer_struct
 
-        unsafe impl<#extra_generic #error_generic #( #generic_names, )* #impl_generics > ::in_place_init::PinInit<#struct_name #struct_generics, #extra_type> for #initailizer_name< #(#generic_names,)* >
+        unsafe impl<#extra_generic __Error, #( #generic_names, )* #impl_generics > ::in_place_init::PinInit<#struct_name #struct_generics, __Error, #extra_type> for #initailizer_name< #(#generic_names,)* >
             #where_clause
-                #( #generic_names: ::in_place_init::PinInit<#field_tys, #extra_type, Error = #error_type>, )*
+                #( #generic_names: ::in_place_init::PinInit<#field_tys, __Error, #extra_type>, )*
         {
-            type Error = #error_type;
 
             fn metadata(&self) #( -> <#tail_ty as ::core::ptr::Pointee>::Metadata )* {
                 let Self( #( #generic_names, )* ) = self;
                 #( #tail_generic.metadata() )*
             }
 
-            unsafe fn init(self, dst: *mut #struct_name #struct_generics, extra: #extra_type) -> Result<(), #error_type> {
+            unsafe fn init(self, dst: *mut #struct_name #struct_generics, extra: #extra_type) -> Result<(), __Error> {
                 let Self(#(#generic_names,)*) = self;
                 #(
                     let #generic_names = {
@@ -170,9 +162,9 @@ pub fn derive_init(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
             }
         }
 
-        unsafe impl<#extra_generic #error_generic #( #generic_names, )* #impl_generics > ::in_place_init::Init<#struct_name #struct_generics, #extra_type> for #initailizer_name< #(#generic_names,)* >
+        unsafe impl<#extra_generic __Error, #( #generic_names, )* #impl_generics > ::in_place_init::Init<#struct_name #struct_generics, __Error, #extra_type> for #initailizer_name< #(#generic_names,)* >
             where
-                #( #generic_names: ::in_place_init::Init<#field_tys, #extra_type, Error = #error_type>, )*
+                #( #generic_names: ::in_place_init::Init<#field_tys, __Error, #extra_type>, )*
         {}
 
     }.into()

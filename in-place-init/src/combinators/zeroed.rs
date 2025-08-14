@@ -97,14 +97,12 @@ impl<T: MetaSized> Zeroed<T> {
     }
 }
 
-unsafe impl<T: MetaSized> PinInit<T> for Zeroed<T> {
-    type Error = !;
-
+unsafe impl<T: MetaSized, Error> PinInit<T, Error> for Zeroed<T> {
     fn metadata(&self) -> <T as Pointee>::Metadata {
         self.meta
     }
 
-    unsafe fn init(self, dst: *mut T, _extra: ()) -> Result<(), Self::Error> {
+    unsafe fn init(self, dst: *mut T, _extra: ()) -> Result<(), Error> {
         let size = unsafe { core::mem::size_of_val_raw(dst) };
         unsafe { core::ptr::write_bytes(dst.cast::<u8>(), 0, size) };
         // `Self` can only be constructed if `T` with meta `self.meta`
@@ -112,4 +110,4 @@ unsafe impl<T: MetaSized> PinInit<T> for Zeroed<T> {
         Ok(())
     }
 }
-unsafe impl<T: MetaSized> Init<T> for Zeroed<T> {}
+unsafe impl<T: MetaSized, Error> Init<T, Error> for Zeroed<T> {}

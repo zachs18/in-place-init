@@ -40,16 +40,14 @@ impl<I> Repeat<I, RuntimeLength> {
     }
 }
 
-unsafe impl<T, L: Length, Extra: Clone, I: Clone + PinInit<T, Extra>> PinInit<[T], Extra>
-    for Repeat<I, L>
+unsafe impl<T, L: Length, Error, Extra: Clone, I: Clone + PinInit<T, Error, Extra>>
+    PinInit<[T], Error, Extra> for Repeat<I, L>
 {
-    type Error = I::Error;
-
     fn metadata(&self) -> usize {
         self.length.length()
     }
 
-    unsafe fn init(self, dst: *mut [T], extra: Extra) -> Result<(), Self::Error> {
+    unsafe fn init(self, dst: *mut [T], extra: Extra) -> Result<(), Error> {
         let mut buf = unsafe { noop_allocator::owning_slice::empty_from_raw(dst) };
         let count = self.length.length();
         debug_assert_eq!(buf.capacity(), count);
@@ -69,15 +67,13 @@ unsafe impl<T, L: Length, Extra: Clone, I: Clone + Init<T, Extra>> Init<[T], Ext
 {
 }
 
-unsafe impl<T, const N: usize, Extra: Clone, I: Clone + PinInit<T, Extra>> PinInit<[T; N], Extra>
-    for Repeat<I, ConstLength<N>>
+unsafe impl<T, const N: usize, Error, Extra: Clone, I: Clone + PinInit<T, Error, Extra>>
+    PinInit<[T; N], Error, Extra> for Repeat<I, ConstLength<N>>
 {
-    type Error = I::Error;
-
     fn metadata(&self) {}
 
-    unsafe fn init(self, dst: *mut [T; N], extra: Extra) -> Result<(), Self::Error> {
-        unsafe { <Self as PinInit<[T], Extra>>::init(self, dst, extra) }
+    unsafe fn init(self, dst: *mut [T; N], extra: Extra) -> Result<(), Error> {
+        unsafe { <Self as PinInit<[T], Error, Extra>>::init(self, dst, extra) }
     }
 }
 unsafe impl<T, const N: usize, Extra: Clone, I: Clone + Init<T, Extra>> Init<[T; N], Extra>

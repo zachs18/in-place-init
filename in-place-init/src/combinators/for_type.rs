@@ -34,14 +34,14 @@ impl<T: MetaSized, I> ForType<T, I> {
     }
 }
 
-unsafe impl<T: MetaSized, Extra, I: PinInit<T, Extra>> PinInit<T, Extra> for ForType<T, I> {
-    type Error = I::Error;
-
+unsafe impl<T: MetaSized, Error, Extra, I: PinInit<T, Error, Extra>> PinInit<T, Error, Extra>
+    for ForType<T, I>
+{
     fn metadata(&self) -> <T as core::ptr::Pointee>::Metadata {
         self.init.metadata()
     }
 
-    unsafe fn init(self, dst: *mut T, extra: Extra) -> Result<(), Self::Error> {
+    unsafe fn init(self, dst: *mut T, extra: Extra) -> Result<(), Error> {
         // SAFETY: discharged to caller
         unsafe { self.init.init(dst, extra) }
     }

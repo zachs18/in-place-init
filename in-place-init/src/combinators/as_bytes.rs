@@ -12,15 +12,15 @@ impl<I> AsBytes<I> {
     }
 }
 
-unsafe impl<Extra, E, I: PinInit<str, Extra, Error = E>> PinInit<[u8], Extra> for AsBytes<I> {
-    type Error = E;
-
+unsafe impl<Error, Extra, I: PinInit<str, Error, Extra>> PinInit<[u8], Error, Extra>
+    for AsBytes<I>
+{
     fn metadata(&self) -> <[u8] as core::ptr::Pointee>::Metadata {
         self.init.metadata()
     }
 
-    unsafe fn init(self, dst: *mut [u8], extra: Extra) -> Result<(), Self::Error> {
+    unsafe fn init(self, dst: *mut [u8], extra: Extra) -> Result<(), Error> {
         unsafe { self.init.init(dst as *mut str, extra) }
     }
 }
-unsafe impl<Extra, E, I: Init<str, Extra, Error = E>> Init<[u8], Extra> for AsBytes<I> {}
+unsafe impl<Error, Extra, I: Init<str, Error, Extra>> Init<[u8], Error, Extra> for AsBytes<I> {}

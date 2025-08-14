@@ -4,20 +4,20 @@ use alloc::string::String;
 
 use crate::Init;
 
-pub fn try_new_string<E>(init: impl Init<str, Error = E>) -> Result<String, E> {
+pub fn try_new_string<Error>(init: impl Init<str, Error>) -> Result<String, Error> {
     crate::try_new_boxed(init).map(String::from)
 }
-pub fn new_string(init: impl Init<str, Error = !>) -> String {
+pub fn new_string(init: impl Init<str, !>) -> String {
     String::from(crate::new_boxed(init))
 }
 
 pub trait StringExt {
-    fn try_append_emplace<E>(&mut self, init: impl Init<str, Error = E>) -> Result<(), E>;
-    fn append_emplace(&mut self, init: impl Init<str, Error = !>);
+    fn try_append_emplace<Error>(&mut self, init: impl Init<str, Error>) -> Result<(), Error>;
+    fn append_emplace(&mut self, init: impl Init<str>);
 }
 
 impl StringExt for String {
-    fn try_append_emplace<E>(&mut self, init: impl Init<str, Error = E>) -> Result<(), E> {
+    fn try_append_emplace<Error>(&mut self, init: impl Init<str, Error>) -> Result<(), Error> {
         let additional = init.metadata();
         self.reserve(additional);
         let len = self.len();
@@ -32,7 +32,7 @@ impl StringExt for String {
         Ok(())
     }
 
-    fn append_emplace(&mut self, init: impl Init<str, Error = !>) {
+    fn append_emplace(&mut self, init: impl Init<str>) {
         self.try_append_emplace(init).unwrap_or_else(|e| match e {});
     }
 }

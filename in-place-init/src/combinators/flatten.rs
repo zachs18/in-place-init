@@ -65,17 +65,16 @@ unsafe impl<
     const N: usize,
     const M: usize,
     const P: usize,
+    Error,
     Extra,
-    I: PinInit<[[T; N]; M], Extra>,
-> PinInit<[T], Extra> for Flatten<[[T; N]; M], [T; P], I>
+    I: PinInit<[[T; N]; M], Error, Extra>,
+> PinInit<[T], Error, Extra> for Flatten<[[T; N]; M], [T; P], I>
 {
-    type Error = I::Error;
-
     fn metadata(&self) -> usize {
         P
     }
 
-    unsafe fn init(self, dst: *mut [T], extra: Extra) -> Result<(), Self::Error> {
+    unsafe fn init(self, dst: *mut [T], extra: Extra) -> Result<(), Error> {
         if cfg!(debug_assertions) {
             assert_eq!(usize::strict_mul(N, M), P);
             assert_eq!(dst.len(), P);
@@ -86,8 +85,15 @@ unsafe impl<
         unsafe { self.init.init(dst, extra) }
     }
 }
-unsafe impl<T, const N: usize, const M: usize, const P: usize, Extra, I: Init<[[T; N]; M], Extra>>
-    Init<[T], Extra> for Flatten<[[T; N]; M], [T; P], I>
+unsafe impl<
+    T,
+    const N: usize,
+    const M: usize,
+    const P: usize,
+    Error,
+    Extra,
+    I: Init<[[T; N]; M], Error, Extra>,
+> Init<[T], Error, Extra> for Flatten<[[T; N]; M], [T; P], I>
 {
 }
 
@@ -97,15 +103,14 @@ unsafe impl<
     const N: usize,
     const M: usize,
     const P: usize,
+    Error,
     Extra,
-    I: PinInit<[[T; N]; M], Extra>,
-> PinInit<[T; P], Extra> for Flatten<[[T; N]; M], [T; P], I>
+    I: PinInit<[[T; N]; M], Error, Extra>,
+> PinInit<[T; P], Error, Extra> for Flatten<[[T; N]; M], [T; P], I>
 {
-    type Error = I::Error;
-
     fn metadata(&self) {}
 
-    unsafe fn init(self, dst: *mut [T; P], extra: Extra) -> Result<(), Self::Error> {
+    unsafe fn init(self, dst: *mut [T; P], extra: Extra) -> Result<(), Error> {
         if cfg!(debug_assertions) {
             assert_eq!(usize::strict_mul(N, M), P);
         };
@@ -115,17 +120,22 @@ unsafe impl<
         unsafe { self.init.init(dst, extra) }
     }
 }
-unsafe impl<T, const N: usize, const M: usize, const P: usize, Extra, I: Init<[[T; N]; M], Extra>>
-    Init<[T; P], Extra> for Flatten<[[T; N]; M], [T; P], I>
+unsafe impl<
+    T,
+    const N: usize,
+    const M: usize,
+    const P: usize,
+    Error,
+    Extra,
+    I: Init<[[T; N]; M], Error, Extra>,
+> Init<[T; P], Error, Extra> for Flatten<[[T; N]; M], [T; P], I>
 {
 }
 
 /// Initialize a slice with a slice of arrays with the same total element length.
-unsafe impl<T, const N: usize, Extra, I: PinInit<[[T; N]], Extra>> PinInit<[T], Extra>
-    for Flatten<[[T; N]], [T], I>
+unsafe impl<T, const N: usize, Error, Extra, I: PinInit<[[T; N]], Error, Extra>>
+    PinInit<[T], Error, Extra> for Flatten<[[T; N]], [T], I>
 {
-    type Error = I::Error;
-
     fn metadata(&self) -> usize {
         self.init
             .metadata()
@@ -133,9 +143,9 @@ unsafe impl<T, const N: usize, Extra, I: PinInit<[[T; N]], Extra>> PinInit<[T], 
             .expect("slice length overflow")
     }
 
-    unsafe fn init(self, dst: *mut [T], extra: Extra) -> Result<(), Self::Error> {
+    unsafe fn init(self, dst: *mut [T], extra: Extra) -> Result<(), Error> {
         if cfg!(debug_assertions) {
-            let total_len = <Self as PinInit<[T], _>>::metadata(&self);
+            let total_len = <Self as PinInit<[T], Error, _>>::metadata(&self);
             assert_eq!(dst.len(), total_len);
         };
         let chunk_count: usize = self.init.metadata();

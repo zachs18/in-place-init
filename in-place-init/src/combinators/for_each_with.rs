@@ -114,16 +114,14 @@ impl<F> ForEachWith<F, RuntimeLength> {
     }
 }
 
-unsafe impl<T, L: Length, Extra: Clone, I: PinInit<T>, F: FnMut(usize, Extra) -> I>
-    PinInit<[T], Extra> for ForEachWith<F, L>
+unsafe impl<T, L: Length, Error, Extra: Clone, I: PinInit<T, Error>, F: FnMut(usize, Extra) -> I>
+    PinInit<[T], Error, Extra> for ForEachWith<F, L>
 {
-    type Error = I::Error;
-
     fn metadata(&self) -> usize {
         self.length.length()
     }
 
-    unsafe fn init(mut self, dst: *mut [T], extra: Extra) -> Result<(), Self::Error> {
+    unsafe fn init(mut self, dst: *mut [T], extra: Extra) -> Result<(), Error> {
         let mut buf = unsafe { noop_allocator::owning_slice::empty_from_raw(dst) };
         let count = self.length.length();
         debug_assert_eq!(buf.capacity(), count);
@@ -138,23 +136,27 @@ unsafe impl<T, L: Length, Extra: Clone, I: PinInit<T>, F: FnMut(usize, Extra) ->
         Ok(())
     }
 }
-unsafe impl<T, L: Length, Extra: Clone, I: Init<T>, F: FnMut(usize, Extra) -> I> Init<[T], Extra>
-    for ForEachWith<F, L>
+unsafe impl<T, L: Length, Error, Extra: Clone, I: Init<T, Error>, F: FnMut(usize, Extra) -> I>
+    Init<[T], Error, Extra> for ForEachWith<F, L>
 {
 }
 
-unsafe impl<T, const N: usize, Extra: Clone, I: PinInit<T>, F: FnMut(usize, Extra) -> I>
-    PinInit<[T; N], Extra> for ForEachWith<F, ConstLength<N>>
+unsafe impl<
+    T,
+    const N: usize,
+    Error,
+    Extra: Clone,
+    I: PinInit<T, Error>,
+    F: FnMut(usize, Extra) -> I,
+> PinInit<[T; N], Error, Extra> for ForEachWith<F, ConstLength<N>>
 {
-    type Error = I::Error;
-
     fn metadata(&self) {}
 
-    unsafe fn init(self, dst: *mut [T; N], extra: Extra) -> Result<(), Self::Error> {
-        unsafe { <Self as PinInit<[T], Extra>>::init(self, dst, extra) }
+    unsafe fn init(self, dst: *mut [T; N], extra: Extra) -> Result<(), Error> {
+        unsafe { <Self as PinInit<[T], Error, Extra>>::init(self, dst, extra) }
     }
 }
-unsafe impl<T, const N: usize, Extra: Clone, I: Init<T>, F: FnMut(usize, Extra) -> I>
-    Init<[T; N], Extra> for ForEachWith<F, ConstLength<N>>
+unsafe impl<T, const N: usize, Error, Extra: Clone, I: Init<T, Error>, F: FnMut(usize, Extra) -> I>
+    Init<[T; N], Error, Extra> for ForEachWith<F, ConstLength<N>>
 {
 }

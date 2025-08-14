@@ -50,17 +50,15 @@ impl<T: MetaSized> Uninit<T> {
     }
 }
 
-unsafe impl<T: MetaSized> PinInit<T> for Uninit<T> {
-    type Error = !;
-
+unsafe impl<T: MetaSized, Error> PinInit<T, Error> for Uninit<T> {
     fn metadata(&self) -> <T as Pointee>::Metadata {
         self.meta
     }
 
-    unsafe fn init(self, _dst: *mut T, _extra: ()) -> Result<(), Self::Error> {
+    unsafe fn init(self, _dst: *mut T, _extra: ()) -> Result<(), Error> {
         // `Self` can only be constructed if `T` with meta `self.meta`
         // is valid to leave uninitialized.
         Ok(())
     }
 }
-unsafe impl<T: MetaSized> Init<T> for Uninit<T> {}
+unsafe impl<T: MetaSized, Error> Init<T, Error> for Uninit<T> {}

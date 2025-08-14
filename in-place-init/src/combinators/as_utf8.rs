@@ -12,16 +12,14 @@ impl<I> AsUtf8<I> {
     }
 }
 
-unsafe impl<Extra, E: From<core::str::Utf8Error>, I: PinInit<[u8], Extra, Error = E>>
-    PinInit<str, Extra> for AsUtf8<I>
+unsafe impl<Error: From<core::str::Utf8Error>, Extra, I: PinInit<[u8], Error, Extra>>
+    PinInit<str, Error, Extra> for AsUtf8<I>
 {
-    type Error = E;
-
     fn metadata(&self) -> <[u8] as core::ptr::Pointee>::Metadata {
         self.init.metadata()
     }
 
-    unsafe fn init(self, dst: *mut str, extra: Extra) -> Result<(), Self::Error> {
+    unsafe fn init(self, dst: *mut str, extra: Extra) -> Result<(), Error> {
         let dst = dst as *mut [u8];
         // SAFETY: discharged to caller, except for UTF-8 requirement which we check later
         unsafe { self.init.init(dst, extra) }?;
@@ -31,7 +29,7 @@ unsafe impl<Extra, E: From<core::str::Utf8Error>, I: PinInit<[u8], Extra, Error 
         Ok(())
     }
 }
-unsafe impl<Extra, E: From<core::str::Utf8Error>, I: Init<[u8], Extra, Error = E>> Init<str, Extra>
-    for AsUtf8<I>
+unsafe impl<Error: From<core::str::Utf8Error>, Extra, I: Init<[u8], Error, Extra>>
+    Init<str, Error, Extra> for AsUtf8<I>
 {
 }

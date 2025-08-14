@@ -57,17 +57,17 @@ impl<I, A: Allocator, Extra> Builder<I, A, Extra> {
         }
     }
 
-    pub fn try_build_box<T: MetaSized>(self) -> Result<Box<T, A>, I::Error>
+    pub fn try_build_box<T: MetaSized, Error>(self) -> Result<Box<T, A>, Error>
     where
-        I: Init<T, Extra>,
+        I: Init<T, Error, Extra>,
     {
         // SAFETY: `I` implements `Init<T, Extra>`
         unsafe { boxed::new_impl(self.init, self.alloc, self.extra) }
     }
 
-    pub fn try_build_pinned_box<T: MetaSized>(self) -> Result<Pin<Box<T, A>>, I::Error>
+    pub fn try_build_pinned_box<T: MetaSized, Error>(self) -> Result<Pin<Box<T, A>>, Error>
     where
-        I: PinInit<T, Extra>,
+        I: PinInit<T, Error, Extra>,
         A: 'static,
     {
         // Safety: the box is immediately pinned
@@ -76,53 +76,53 @@ impl<I, A: Allocator, Extra> Builder<I, A, Extra> {
 
     pub fn build_box<T: MetaSized>(self) -> Box<T, A>
     where
-        I: Init<T, Extra, Error = !>,
+        I: Init<T, !, Extra>,
     {
         self.try_build_box().unwrap_or_else(|e| match e {})
     }
 
     pub fn build_pinned_box<T: MetaSized>(self) -> Pin<Box<T, A>>
     where
-        I: PinInit<T, Extra, Error = !>,
+        I: PinInit<T, !, Extra>,
         A: 'static,
     {
         self.try_build_pinned_box().unwrap_or_else(|e| match e {})
     }
 
-    pub fn try_build_vec<T>(self) -> Result<Vec<T, A>, I::Error>
+    pub fn try_build_vec<T, Error>(self) -> Result<Vec<T, A>, Error>
     where
-        I: Init<[T], Extra>,
+        I: Init<[T], Error, Extra>,
     {
         self.try_build_box().map(Vec::from)
     }
 
     pub fn build_vec<T>(self) -> Vec<T, A>
     where
-        I: Init<[T], Extra, Error = !>,
+        I: Init<[T], !, Extra>,
     {
         Vec::from(self.try_build_box().unwrap_or_else(|e| match e {}))
     }
 
-    pub fn try_build_rc<T: MetaSized>(self) -> Result<Rc<T, A>, I::Error>
+    pub fn try_build_rc<T: MetaSized, Error>(self) -> Result<Rc<T, A>, Error>
     where
-        I: Init<T, Extra>,
+        I: Init<T, Error, Extra>,
     {
         // SAFETY: `I` implements `Init<T, Extra>`
         unsafe {
-            rc::rc_new_base_impl::<T, I::Error, A, Extra, rc::NonWeakExtra>(
+            rc::rc_new_base_impl::<T, Error, A, Extra, rc::NonWeakExtra>(
                 self.init, self.alloc, self.extra,
             )
         }
     }
 
-    pub fn try_build_pinned_rc<T: MetaSized>(self) -> Result<Pin<Rc<T, A>>, I::Error>
+    pub fn try_build_pinned_rc<T: MetaSized, Error>(self) -> Result<Pin<Rc<T, A>>, Error>
     where
-        I: PinInit<T, Extra>,
+        I: PinInit<T, Error, Extra>,
         A: 'static,
     {
         // Safety: the rc is immediately pinned
         let rc = unsafe {
-            rc::rc_new_base_impl::<T, I::Error, A, Extra, rc::NonWeakExtra>(
+            rc::rc_new_base_impl::<T, Error, A, Extra, rc::NonWeakExtra>(
                 self.init, self.alloc, self.extra,
             )
         }?;
@@ -131,27 +131,27 @@ impl<I, A: Allocator, Extra> Builder<I, A, Extra> {
 
     pub fn build_rc<T: MetaSized>(self) -> Rc<T, A>
     where
-        I: Init<T, Extra, Error = !>,
+        I: Init<T, !, Extra>,
     {
         self.try_build_rc().unwrap_or_else(|e| match e {})
     }
 
     pub fn build_pinned_rc<T: MetaSized>(self) -> Pin<Rc<T, A>>
     where
-        I: PinInit<T, Extra, Error = !>,
+        I: PinInit<T, !, Extra>,
         A: 'static,
     {
         self.try_build_pinned_rc().unwrap_or_else(|e| match e {})
     }
 
-    pub fn try_build_cyclic_rc_with<T: MetaSized>(self) -> Result<Rc<T, A>, I::Error>
+    pub fn try_build_cyclic_rc_with<T: MetaSized, Error>(self) -> Result<Rc<T, A>, Error>
     where
-        I: Init<T, (rc::Weak<T, A>, Extra)>,
+        I: Init<T, Error, (rc::Weak<T, A>, Extra)>,
         A: Clone,
     {
         // SAFETY: `I` implements `Init<T, _>`
         unsafe {
-            rc::rc_new_base_impl::<T, I::Error, A, Extra, rc::WithWeakExtra>(
+            rc::rc_new_base_impl::<T, Error, A, Extra, rc::WithWeakExtra>(
                 self.init, self.alloc, self.extra,
             )
         }
@@ -160,16 +160,16 @@ impl<I, A: Allocator, Extra> Builder<I, A, Extra> {
     /// # Safety
     ///
     /// The `rc::Weak<T, A>`s passed to `init` must be treated as pinned.
-    pub unsafe fn try_build_pinned_cyclic_rc_with<T: MetaSized>(
+    pub unsafe fn try_build_pinned_cyclic_rc_with<T: MetaSized, Error>(
         self,
-    ) -> Result<Pin<Rc<T, A>>, I::Error>
+    ) -> Result<Pin<Rc<T, A>>, Error>
     where
-        I: PinInit<T, (rc::Weak<T, A>, Extra)>,
+        I: PinInit<T, Error, (rc::Weak<T, A>, Extra)>,
         A: Clone + 'static,
     {
         // Safety: the rc is immediately pinned, the `Weak` requirement is discharged to the caller
         let rc = unsafe {
-            rc::rc_new_base_impl::<T, I::Error, A, Extra, rc::WithWeakExtra>(
+            rc::rc_new_base_impl::<T, Error, A, Extra, rc::WithWeakExtra>(
                 self.init, self.alloc, self.extra,
             )
         }?;
@@ -178,7 +178,7 @@ impl<I, A: Allocator, Extra> Builder<I, A, Extra> {
 
     pub fn build_cyclic_rc_with<T: MetaSized>(self) -> Rc<T, A>
     where
-        I: Init<T, (rc::Weak<T, A>, Extra), Error = !>,
+        I: Init<T, !, (rc::Weak<T, A>, Extra)>,
         A: Clone,
     {
         self.try_build_cyclic_rc_with()
@@ -190,7 +190,7 @@ impl<I, A: Allocator, Extra> Builder<I, A, Extra> {
     /// The `rc::Weak<T, A>`s passed to `init` must be treated as pinned.
     pub unsafe fn build_pinned_cyclic_rc_with<T: MetaSized>(self) -> Pin<Rc<T, A>>
     where
-        I: PinInit<T, (rc::Weak<T, A>, Extra), Error = !>,
+        I: PinInit<T, !, (rc::Weak<T, A>, Extra)>,
         A: Clone + 'static,
     {
         // SAFETY: discharged to caller
@@ -203,14 +203,14 @@ impl<I, A: Allocator, Extra> Builder<I, A, Extra> {
 
 #[allow(clippy::unit_arg, reason = "symmetry")]
 impl<I, A: Allocator> Builder<I, A, ()> {
-    pub fn try_build_cyclic_rc<T: MetaSized>(self) -> Result<Rc<T, A>, I::Error>
+    pub fn try_build_cyclic_rc<T: MetaSized, Error>(self) -> Result<Rc<T, A>, Error>
     where
-        I: Init<T, rc::Weak<T, A>>,
+        I: Init<T, Error, rc::Weak<T, A>>,
         A: Clone,
     {
         // SAFETY: `I` implements `Init<T, ()>`
         unsafe {
-            rc::rc_new_base_impl::<T, I::Error, A, (), rc::WeakExtra>(
+            rc::rc_new_base_impl::<T, Error, A, (), rc::WeakExtra>(
                 self.init, self.alloc, self.extra,
             )
         }
@@ -219,14 +219,16 @@ impl<I, A: Allocator> Builder<I, A, ()> {
     /// # Safety
     ///
     /// The `rc::Weak<T, A>`s passed to `init` must be treated as pinned.
-    pub unsafe fn try_build_pinned_cyclic_rc<T: MetaSized>(self) -> Result<Pin<Rc<T, A>>, I::Error>
+    pub unsafe fn try_build_pinned_cyclic_rc<T: MetaSized, Error>(
+        self,
+    ) -> Result<Pin<Rc<T, A>>, Error>
     where
-        I: PinInit<T, rc::Weak<T, A>>,
+        I: PinInit<T, Error, rc::Weak<T, A>>,
         A: Clone + 'static,
     {
         // Safety: the rc is immediately pinned, the `Weak` requirement is discharged to the caller
         let rc = unsafe {
-            rc::rc_new_base_impl::<T, I::Error, A, (), rc::WeakExtra>(
+            rc::rc_new_base_impl::<T, Error, A, (), rc::WeakExtra>(
                 self.init, self.alloc, self.extra,
             )
         }?;
@@ -235,7 +237,7 @@ impl<I, A: Allocator> Builder<I, A, ()> {
 
     pub fn build_cyclic_rc<T: MetaSized>(self) -> Rc<T, A>
     where
-        I: Init<T, rc::Weak<T, A>, Error = !>,
+        I: Init<T, !, rc::Weak<T, A>>,
         A: Clone,
     {
         self.try_build_cyclic_rc().unwrap_or_else(|e| match e {})
@@ -246,7 +248,7 @@ impl<I, A: Allocator> Builder<I, A, ()> {
     /// The `rc::Weak<T, A>`s passed to `init` must be treated as pinned.
     pub unsafe fn build_pinned_cyclic_rc<T: MetaSized>(self) -> Pin<Rc<T, A>>
     where
-        I: PinInit<T, rc::Weak<T, A>, Error = !>,
+        I: PinInit<T, !, rc::Weak<T, A>>,
         A: Clone + 'static,
     {
         // SAFETY: discharged to caller

@@ -13,16 +13,9 @@ impl<I1, I2> Chain<I1, I2> {
     }
 }
 
-unsafe impl<
-    T,
-    Extra: Clone,
-    E,
-    I1: PinInit<[T], Extra, Error = E>,
-    I2: PinInit<[T], Extra, Error = E>,
-> PinInit<[T], Extra> for Chain<I1, I2>
+unsafe impl<T, Error, Extra: Clone, I1: PinInit<[T], Error, Extra>, I2: PinInit<[T], Error, Extra>>
+    PinInit<[T], Error, Extra> for Chain<I1, I2>
 {
-    type Error = E;
-
     fn metadata(&self) -> usize {
         self.init1
             .metadata()
@@ -30,7 +23,7 @@ unsafe impl<
             .expect("slice length overflow")
     }
 
-    unsafe fn init(self, dst: *mut [T], extra: Extra) -> Result<(), Self::Error> {
+    unsafe fn init(self, dst: *mut [T], extra: Extra) -> Result<(), Error> {
         let len1 = self.init1.metadata();
         let len2 = self.init2.metadata();
         debug_assert_eq!(dst.len(), len1 + len2);
@@ -51,16 +44,14 @@ unsafe impl<
         Ok(())
     }
 }
-unsafe impl<T, Extra: Clone, E, I1: Init<[T], Extra, Error = E>, I2: Init<[T], Extra, Error = E>>
-    Init<[T], Extra> for Chain<I1, I2>
+unsafe impl<T, Error, Extra: Clone, I1: Init<[T], Error, Extra>, I2: Init<[T], Error, Extra>>
+    Init<[T], Error, Extra> for Chain<I1, I2>
 {
 }
 
-unsafe impl<Extra: Clone, E, I1: PinInit<str, Extra, Error = E>, I2: PinInit<str, Extra, Error = E>>
-    PinInit<str, Extra> for Chain<I1, I2>
+unsafe impl<Error, Extra: Clone, I1: PinInit<str, Error, Extra>, I2: PinInit<str, Error, Extra>>
+    PinInit<str, Error, Extra> for Chain<I1, I2>
 {
-    type Error = E;
-
     fn metadata(&self) -> usize {
         self.init1
             .metadata()
@@ -68,7 +59,7 @@ unsafe impl<Extra: Clone, E, I1: PinInit<str, Extra, Error = E>, I2: PinInit<str
             .expect("slice length overflow")
     }
 
-    unsafe fn init(self, dst: *mut str, extra: Extra) -> Result<(), Self::Error> {
+    unsafe fn init(self, dst: *mut str, extra: Extra) -> Result<(), Error> {
         let len1 = self.init1.metadata();
         let len2 = self.init2.metadata();
         debug_assert_eq!((dst as *mut [u8]).len(), len1 + len2);
@@ -83,7 +74,7 @@ unsafe impl<Extra: Clone, E, I1: PinInit<str, Extra, Error = E>, I2: PinInit<str
         Ok(())
     }
 }
-unsafe impl<Extra: Clone, E, I1: Init<str, Extra, Error = E>, I2: Init<str, Extra, Error = E>>
-    Init<str, Extra> for Chain<I1, I2>
+unsafe impl<Error, Extra: Clone, I1: Init<str, Error, Extra>, I2: Init<str, Error, Extra>>
+    Init<str, Error, Extra> for Chain<I1, I2>
 {
 }

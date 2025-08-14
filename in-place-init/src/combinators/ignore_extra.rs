@@ -30,18 +30,19 @@ impl<T: MetaSized, I> IgnoreExtra<T, I> {
     }
 }
 
-unsafe impl<T: MetaSized, Extra, E, I: PinInit<T, Error = E>> PinInit<T, Extra>
+unsafe impl<T: MetaSized, Error, Extra, I: PinInit<T, Error>> PinInit<T, Error, Extra>
     for IgnoreExtra<T, I>
 {
-    type Error = E;
-
     fn metadata(&self) -> <T as Pointee>::Metadata {
         self.init.metadata()
     }
 
-    unsafe fn init(self, dst: *mut T, _: Extra) -> Result<(), Self::Error> {
+    unsafe fn init(self, dst: *mut T, _: Extra) -> Result<(), Error> {
         unsafe { self.init.init(dst, ()) }
     }
 }
 
-unsafe impl<T: MetaSized, Extra, E, I: Init<T, Error = E>> Init<T, Extra> for IgnoreExtra<T, I> {}
+unsafe impl<T: MetaSized, Error, Extra, I: Init<T, Error>> Init<T, Error, Extra>
+    for IgnoreExtra<T, I>
+{
+}

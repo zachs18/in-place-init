@@ -34,15 +34,13 @@ impl<T: MetaSized, E> Fail<T, E> {
     }
 }
 
-unsafe impl<T: MetaSized, E> PinInit<T> for Fail<T, E> {
-    type Error = E;
-
+unsafe impl<T: MetaSized, E, Error: From<E>> PinInit<T, Error> for Fail<T, E> {
     fn metadata(&self) -> <T as Pointee>::Metadata {
         self.meta
     }
 
-    unsafe fn init(self, _dst: *mut T, _extra: ()) -> Result<(), Self::Error> {
-        Err(self.err)
+    unsafe fn init(self, _dst: *mut T, _extra: ()) -> Result<(), Error> {
+        Err(self.err.into())
     }
 }
-unsafe impl<T: MetaSized, E> Init<T> for Fail<T, E> {}
+unsafe impl<T: MetaSized, E, Error: From<E>> Init<T, Error> for Fail<T, E> {}

@@ -6,13 +6,15 @@ use core::{
 use crate::{Init, PinInit};
 
 /// An initializer that will always succeed. This can be helpful to use an infallible initializer in a combinator with a fallible initializer.
-pub struct Succeed<T: MetaSized, I, E> {
+///
+/// FIXME: This is probably not
+pub struct Succeed<T: MetaSized, I, Error> {
     result: PhantomData<fn() -> T>,
-    err: PhantomData<fn() -> E>,
+    err: PhantomData<fn() -> Error>,
     init: I,
 }
 
-impl<T: MetaSized, I: Clone, E> Clone for Succeed<T, I, E> {
+impl<T: MetaSized, I: Clone, Error> Clone for Succeed<T, I, Error> {
     fn clone(&self) -> Self {
         Self {
             result: PhantomData,
@@ -22,7 +24,7 @@ impl<T: MetaSized, I: Clone, E> Clone for Succeed<T, I, E> {
     }
 }
 
-impl<T: MetaSized, I: Copy, E> Copy for Succeed<T, I, E> {}
+impl<T: MetaSized, I: Copy, Error> Copy for Succeed<T, I, Error> {}
 
 impl<T: MetaSized, I, E> Succeed<T, I, E> {
     pub fn new(init: I) -> Self {
@@ -34,22 +36,20 @@ impl<T: MetaSized, I, E> Succeed<T, I, E> {
     }
 }
 
-unsafe impl<T: MetaSized, Extra, E, I: PinInit<T, Extra, Error = !>> PinInit<T, Extra>
+unsafe impl<T: MetaSized, Error, Extra, E, I: PinInit<T, !, Extra>> PinInit<T, Error, Extra>
     for Succeed<T, I, E>
 {
-    type Error = E;
-
     fn metadata(&self) -> <T as Pointee>::Metadata {
         self.init.metadata()
     }
 
-    unsafe fn init(self, dst: *mut T, extra: Extra) -> Result<(), Self::Error> {
+    unsafe fn init(self, dst: *mut T, extra: Extra) -> Result<(), Error> {
         let result = unsafe { self.init.init(dst, extra) };
         result.map_err(|e| match e {})
     }
 }
 
-unsafe impl<T: MetaSized, Extra, E, I: Init<T, Extra, Error = !>> Init<T, Extra>
-    for Succeed<T, I, E>
+unsafe impl<T: MetaSized, Error, Extra, I: Init<T, !, Extra>> Init<T, Error, Extra>
+    for Succeed<T, I, Error>
 {
 }

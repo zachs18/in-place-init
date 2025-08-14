@@ -1,4 +1,5 @@
-#![feature(never_type, ptr_metadata)]
+#![feature(ptr_metadata)]
+#![allow(unused)]
 
 use std::{marker::PhantomPinned, pin::Pin, rc::Weak};
 
@@ -22,12 +23,10 @@ impl SelfReferential {
 
 struct MakeSelfReferential(u32);
 
-unsafe impl PinInit<SelfReferential> for MakeSelfReferential {
-    type Error = std::convert::Infallible;
-
+unsafe impl<Error> PinInit<SelfReferential, Error> for MakeSelfReferential {
     fn metadata(&self) {}
 
-    unsafe fn init(self, dst: *mut SelfReferential, _: ()) -> Result<(), Self::Error> {
+    unsafe fn init(self, dst: *mut SelfReferential, _: ()) -> Result<(), Error> {
         unsafe {
             (*dst).value = self.0;
             (*dst).ptr = &raw mut (*dst).value;
@@ -87,8 +86,7 @@ fn main() {
         println!("{rc:?}");
     });
 
-    let mut sr =
-        in_place_init::try_new_pinned::<SelfReferential, _>(MakeSelfReferential(42)).unwrap();
+    let mut sr = in_place_init::new_pinned::<SelfReferential>(MakeSelfReferential(42));
     sr.as_mut().foo();
 
     const N: usize = if cfg!(miri) { 4 } else { 64 };
@@ -158,7 +156,7 @@ mod foo {
         pub tail: T,
     }
 
-    trait Trait {
+    pub trait Trait {
         type Assoc<U: ?Sized>;
     }
     impl<T: ?Sized> Trait for T {
@@ -172,13 +170,19 @@ mod foo {
     }
 
     #[derive(Debug, in_place_init_derive::Init)]
-    pub(crate) struct Phooey<T> where T: ?Sized, {
+    pub(crate) struct Phooey<T>
+    where
+        T: ?Sized,
+    {
         pub foo: <Self as Trait>::Assoc<Self>,
         pub tail: T,
     }
 
     #[derive(Debug, in_place_init_derive::Init)]
-    pub(crate) struct Phenomenal<T> where T: ?Sized {
+    pub(crate) struct Phenomenal<T>
+    where
+        T: ?Sized,
+    {
         pub foo: <Self as Trait>::Assoc<Self>,
         pub tail: T,
     }

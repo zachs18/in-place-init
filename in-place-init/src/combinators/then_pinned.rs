@@ -34,18 +34,16 @@ impl<T: MetaSized, I, F> ThenPinned<T, I, F> {
 unsafe impl<
     T: MetaSized,
     Extra,
-    E,
-    I: PinInit<T, Extra, Error = E>,
-    F: FnOnce(Pin<&mut T>) -> Result<(), E>,
-> PinInit<T, Extra> for ThenPinned<T, I, F>
+    Error,
+    I: PinInit<T, Error, Extra>,
+    F: FnOnce(Pin<&mut T>) -> Result<(), Error>,
+> PinInit<T, Error, Extra> for ThenPinned<T, I, F>
 {
-    type Error = E;
-
     fn metadata(&self) -> <T as core::ptr::Pointee>::Metadata {
         self.init.metadata()
     }
 
-    unsafe fn init(self, dst: *mut T, extra: Extra) -> Result<(), Self::Error> {
+    unsafe fn init(self, dst: *mut T, extra: Extra) -> Result<(), Error> {
         // SAFETY: discharged to caller
         unsafe { self.init.init(dst, extra) }?;
 
@@ -63,9 +61,9 @@ unsafe impl<
 unsafe impl<
     T: MetaSized + Unpin,
     Extra,
-    E,
-    I: PinInit<T, Extra, Error = E>,
-    F: FnOnce(Pin<&mut T>) -> Result<(), E>,
-> Init<T, Extra> for ThenPinned<T, I, F>
+    Error,
+    I: PinInit<T, Error, Extra>,
+    F: FnOnce(Pin<&mut T>) -> Result<(), Error>,
+> Init<T, Error, Extra> for ThenPinned<T, I, F>
 {
 }

@@ -32,9 +32,7 @@ mod util;
 /// # Safety
 ///
 /// See the documentation for [`metadata`][PinInit::metadata] and [`init`][PinInit::init].
-pub unsafe trait PinInit<Dst: MetaSized, Extra = ()>: Sized {
-    type Error;
-
+pub unsafe trait PinInit<Dst: MetaSized, Error = !, Extra = ()>: Sized {
     /// The pointer metadata for the value that this initializer will create.
     ///
     /// # Safety
@@ -78,7 +76,7 @@ pub unsafe trait PinInit<Dst: MetaSized, Extra = ()>: Sized {
     ///
     /// If this function panics or returns `Err(_)`, then it should drop any partially-initialized parts of the destination.
     /// This is not a safety requirement, but failing to do so may cause resource leaks.
-    unsafe fn init(self, dst: *mut Dst, extra: Extra) -> Result<(), Self::Error>;
+    unsafe fn init(self, dst: *mut Dst, extra: Extra) -> Result<(), Error>;
 }
 
 /// A trait for non-pinned in-place initializers.
@@ -88,17 +86,22 @@ pub unsafe trait PinInit<Dst: MetaSized, Extra = ()>: Sized {
 /// See [`PinInit`].
 ///
 /// [`PinInit::init`]'s caller requirements are relaxed to not necessarily treat `*dst` as pinned.
-pub unsafe trait Init<Dst: MetaSized, Extra = ()>: PinInit<Dst, Extra> {}
+pub unsafe trait Init<Dst: MetaSized, Error = !, Extra = ()>:
+    PinInit<Dst, Error, Extra>
+{
+}
 
 /// Helper methods to construct combinators from intializers.
 ///
 /// The methods start with `init_` to help avoid name collisions.
-pub trait PinInitExt<Dst: MetaSized, Extra = ()>: Sized + PinInit<Dst, Extra> {
-    fn init_map_err<E, F: FnOnce(Self::Error) -> E>(self, func: F) -> MapErr<Dst, F, Self> {
+pub trait PinInitExt<Dst: MetaSized, Error = !, Extra = ()>:
+    Sized + PinInit<Dst, Error, Extra>
+{
+    fn init_map_err<E, F: FnOnce(Error) -> E>(self, func: F) -> MapErr<Dst, Error, F, Self> {
         MapErr::new(func, self)
     }
 
-    fn init_map_extra<E, F: FnOnce(E) -> Result<Extra, Self::Error>>(
+    fn init_map_extra<E, F: FnOnce(E) -> Result<Extra, Error>>(
         self,
         func: F,
     ) -> MapExtra<Dst, F, Self> {
@@ -113,20 +116,17 @@ pub trait PinInitExt<Dst: MetaSized, Extra = ()>: Sized + PinInit<Dst, Extra> {
         WithExtra::new(self, extra)
     }
 
-    fn init_chain<I2: PinInit<Dst, Extra, Error = Self::Error>>(
-        self,
-        init2: I2,
-    ) -> Chain<Self, I2> {
+    fn init_chain<I2: PinInit<Dst, Error, Extra>>(self, init2: I2) -> Chain<Self, I2> {
         Chain::new(self, init2)
     }
 
     /// Assert that `self` will be used in a way that respects pinning,
-    unsafe fn init_assert_pinned(self) -> AssertPinned<Dst, Extra, Self> {
+    unsafe fn init_assert_pinned(self) -> AssertPinned<Dst, Error, Extra, Self> {
         unsafe { AssertPinned::new_unchecked(self) }
     }
 
     /// Allow using `self` as an `Init` safely, because `Dst: Unpin`
-    fn init_assert_unpin(self) -> AssertPinned<Dst, Extra, Self>
+    fn init_assert_unpin(self) -> AssertPinned<Dst, Error, Extra, Self>
     where
         Dst: Unpin,
     {
@@ -142,12 +142,10 @@ impl<Dst: MetaSized, Extra, I: PinInit<Dst, Extra>> PinInitExt<Dst, Extra> for I
 // Simple initializers
 
 /// Initialize a place by writing an existing value.
-unsafe impl<T> PinInit<T> for T {
-    type Error = !;
-
+unsafe impl<T, Error> PinInit<T, Error> for T {
     fn metadata(&self) {}
 
-    unsafe fn init(self, dst: *mut T, _: ()) -> Result<(), !> {
+    unsafe fn init(self, dst: *mut T, _: ()) -> Result<(), Error> {
         unsafe {
             dst.write(self);
         }
@@ -157,9 +155,7 @@ unsafe impl<T> PinInit<T> for T {
 unsafe impl<T> Init<T> for T {}
 
 /// Initialize a place by writing an existing value.
-unsafe impl<T, E> PinInit<T> for Result<T, E> {
-    type Error = E;
-
+unsafe impl<T, E> PinInit<T, E> for Result<T, E> {
     fn metadata(&self) {}
 
     unsafe fn init(self, dst: *mut T, _: ()) -> Result<(), E> {
@@ -170,15 +166,14 @@ unsafe impl<T, E> PinInit<T> for Result<T, E> {
         Ok(())
     }
 }
-unsafe impl<T, E> Init<T> for Result<T, E> {}
+unsafe impl<T, E> Init<T, E> for Result<T, E> {}
 
 /// Initialize a slice with an array of a given length.
-unsafe impl<T, const N: usize> PinInit<[T]> for [T; N] {
-    type Error = !;
+unsafe impl<T, Error, const N: usize> PinInit<[T], Error> for [T; N] {
     fn metadata(&self) -> usize {
         N
     }
-    unsafe fn init(self, dst: *mut [T], _: ()) -> Result<(), !> {
+    unsafe fn init(self, dst: *mut [T], _: ()) -> Result<(), Error> {
         debug_assert_eq!(dst.len(), N);
         unsafe {
             dst.cast::<Self>().write(self);
@@ -186,30 +181,28 @@ unsafe impl<T, const N: usize> PinInit<[T]> for [T; N] {
         Ok(())
     }
 }
-unsafe impl<T, const N: usize> Init<[T]> for [T; N] {}
+unsafe impl<T, Error, const N: usize> Init<[T], Error> for [T; N] {}
 
 /// Initialize a place by cloning an existing value.
-unsafe impl<T: MetaSized + CloneToUninit> PinInit<T> for &T {
-    type Error = !;
+unsafe impl<T: MetaSized + CloneToUninit, Error> PinInit<T, Error> for &T {
     fn metadata(&self) -> <T as Pointee>::Metadata {
         core::ptr::metadata::<T>(*self)
     }
-    unsafe fn init(self, dst: *mut T, _: ()) -> Result<(), !> {
+    unsafe fn init(self, dst: *mut T, _: ()) -> Result<(), Error> {
         unsafe {
             T::clone_to_uninit(self, dst.cast());
         }
         Ok(())
     }
 }
-unsafe impl<T: MetaSized + CloneToUninit> Init<T> for &T {}
+unsafe impl<T: MetaSized + CloneToUninit, Error> Init<T, Error> for &T {}
 
 /// Initialize a place by moving an existing value from a `Box`.
-unsafe impl<T: MetaSized, A: Allocator> PinInit<T> for Box<T, A> {
-    type Error = !;
+unsafe impl<T: MetaSized, Error, A: Allocator> PinInit<T, Error> for Box<T, A> {
     fn metadata(&self) -> <T as Pointee>::Metadata {
         core::ptr::metadata::<T>(&**self)
     }
-    unsafe fn init(self, dst: *mut T, _: ()) -> Result<(), !> {
+    unsafe fn init(self, dst: *mut T, _: ()) -> Result<(), Error> {
         let layout = Layout::for_value::<T>(&*self);
         let (src, alloc) = Box::into_raw_with_allocator(self);
         unsafe {
@@ -230,14 +223,12 @@ unsafe impl<T: MetaSized, A: Allocator> PinInit<T> for Box<T, A> {
 unsafe impl<T: MetaSized, A: Allocator> Init<T> for Box<T, A> {}
 
 /// Initialize a slice by moving elements from a `Vec`.
-unsafe impl<T, A: Allocator> PinInit<[T]> for Vec<T, A> {
-    type Error = !;
-
+unsafe impl<T, Error, A: Allocator> PinInit<[T], Error> for Vec<T, A> {
     fn metadata(&self) -> usize {
         self.len()
     }
 
-    unsafe fn init(mut self, dst: *mut [T], _: ()) -> Result<(), Self::Error> {
+    unsafe fn init(mut self, dst: *mut [T], _: ()) -> Result<(), Error> {
         let count = self.len();
         unsafe {
             self.set_len(0);
@@ -279,12 +270,14 @@ pub fn succeed<T, I, E>(init: I) -> Succeed<T, I, E> {
 }
 
 pub use combinators::map_err::MapErr;
-pub fn map_err<T: MetaSized, F, I>(func: F, init: I) -> MapErr<T, F, I> {
+pub fn map_err<T: MetaSized, E1, F, I>(func: F, init: I) -> MapErr<T, E1, F, I> {
     MapErr::new(func, init)
 }
 
 pub use combinators::assert_pinned::AssertPinned;
-pub unsafe fn assert_pinned<T, Extra, I: PinInit<T, Extra>>(init: I) -> AssertPinned<T, Extra, I> {
+pub unsafe fn assert_pinned<T, Error, Extra, I: PinInit<T, Error, Extra>>(
+    init: I,
+) -> AssertPinned<T, Error, Extra, I> {
     // SAFETY: discharged to caller
     unsafe { AssertPinned::new_unchecked(init) }
 }
@@ -304,14 +297,14 @@ impl<I: ExactSizeIterator> FromIter<I> {
     }
 }
 
-unsafe impl<T, I: ExactSizeIterator<Item = T>, Extra> PinInit<[T], Extra> for FromIter<I> {
-    type Error = InitFromIterError;
-
+unsafe impl<T, I: ExactSizeIterator<Item = T>, Extra> PinInit<[T], InitFromIterError, Extra>
+    for FromIter<I>
+{
     fn metadata(&self) -> usize {
         self.iter.len()
     }
 
-    unsafe fn init(mut self, dst: *mut [T], _: Extra) -> Result<(), Self::Error> {
+    unsafe fn init(mut self, dst: *mut [T], _: Extra) -> Result<(), InitFromIterError> {
         let mut buf = unsafe { noop_allocator::owning_slice::empty_from_raw(dst) };
         let count = self.iter.len();
         debug_assert_eq!(dst.len(), count);
@@ -326,7 +319,10 @@ unsafe impl<T, I: ExactSizeIterator<Item = T>, Extra> PinInit<[T], Extra> for Fr
         Ok(())
     }
 }
-unsafe impl<T, I: ExactSizeIterator<Item = T>, Extra> Init<[T], Extra> for FromIter<I> {}
+unsafe impl<T, I: ExactSizeIterator<Item = T>, Extra> Init<[T], InitFromIterError, Extra>
+    for FromIter<I>
+{
+}
 
 pub use combinators::repeat::Repeat;
 pub fn array_repeat<const N: usize, I>(init: I) -> Repeat<I, ConstLength<N>> {
@@ -368,10 +364,7 @@ pub fn map_extra<T: MetaSized, F, I>(func: F, init: I) -> MapExtra<T, F, I> {
 }
 
 pub use combinators::with_extra::WithExtra;
-pub fn with_extra<T: MetaSized, I: PinInit<T, Extra>, Extra>(
-    init: I,
-    extra: Extra,
-) -> WithExtra<T, Extra, I> {
+pub fn with_extra<T: MetaSized, I, Extra>(init: I, extra: Extra) -> WithExtra<T, Extra, I> {
     WithExtra::new(init, extra)
 }
 
@@ -453,11 +446,11 @@ pub use allocation::rc::{
 /// that the destructor is not run for the inner data if the MaybeUninit leaves scope without
 /// a call to [`MaybeUninit::assume_init`], [`MaybeUninit::assume_init_drop`], or similar. See
 /// the docs for [`MaybeUninit::write`] for more information.
-pub fn try_initialize_with<T, Extra, E>(
+pub fn try_initialize_with<T, Error, Extra>(
     slot: &mut MaybeUninit<T>,
-    init: impl Init<T, Extra, Error = E>,
+    init: impl Init<T, Error, Extra>,
     extra: Extra,
-) -> Result<&mut T, E> {
+) -> Result<&mut T, Error> {
     // SAFETY: `slot` is uniquely borrowed, so it is valid for writes
     unsafe {
         init.init(slot.as_mut_ptr(), extra)?;
@@ -474,7 +467,7 @@ pub fn try_initialize_with<T, Extra, E>(
 /// the docs for [`MaybeUninit::write`] for more information.
 pub fn initialize_with<T, Extra>(
     slot: &mut MaybeUninit<T>,
-    init: impl Init<T, Extra, Error = !>,
+    init: impl Init<T, !, Extra>,
     extra: Extra,
 ) -> &mut T {
     try_initialize_with(slot, init, extra).unwrap_or_else(|e| match e {})
@@ -486,10 +479,10 @@ pub fn initialize_with<T, Extra>(
 /// that the destructor is not run for the inner data if the MaybeUninit leaves scope without
 /// a call to [`MaybeUninit::assume_init`], [`MaybeUninit::assume_init_drop`], or similar. See
 /// the docs for [`MaybeUninit::write`] for more information.
-pub fn try_initialize<T, E>(
+pub fn try_initialize<T, Error>(
     slot: &mut MaybeUninit<T>,
-    init: impl Init<T, Error = E>,
-) -> Result<&mut T, E> {
+    init: impl Init<T, Error>,
+) -> Result<&mut T, Error> {
     try_initialize_with(slot, init, ())
 }
 
@@ -499,16 +492,16 @@ pub fn try_initialize<T, E>(
 /// that the destructor is not run for the inner data if the MaybeUninit leaves scope without
 /// a call to [`MaybeUninit::assume_init`], [`MaybeUninit::assume_init_drop`], or similar. See
 /// the docs for [`MaybeUninit::write`] for more information.
-pub fn initialize<T>(slot: &mut MaybeUninit<T>, init: impl Init<T, Error = !>) -> &mut T {
+pub fn initialize<T>(slot: &mut MaybeUninit<T>, init: impl Init<T>) -> &mut T {
     initialize_with(slot, init, ())
 }
 
 /// Initialize a `MaybeUninit<T>` and return a owning reference to the newly initialized slot.
-pub fn try_initialize_owned_with<T, Extra, E>(
+pub fn try_initialize_owned_with<T, Error, Extra>(
     slot: &mut MaybeUninit<T>,
-    init: impl Init<T, Extra, Error = E>,
+    init: impl Init<T, Error, Extra>,
     extra: Extra,
-) -> Result<OwningRef<'_, T>, E> {
+) -> Result<OwningRef<'_, T>, Error> {
     // SAFETY: `slot` is uniquely borrowed, so it is valid for writes
     unsafe {
         init.init(slot.as_mut_ptr(), extra)?;
@@ -520,24 +513,21 @@ pub fn try_initialize_owned_with<T, Extra, E>(
 /// Initialize a `MaybeUninit<T>` and return a owning reference to the newly initialized slot.
 pub fn initialize_owned_with<T, Extra>(
     slot: &mut MaybeUninit<T>,
-    init: impl Init<T, Extra, Error = !>,
+    init: impl Init<T, !, Extra>,
     extra: Extra,
 ) -> OwningRef<'_, T> {
     try_initialize_owned_with(slot, init, extra).unwrap_or_else(|e| match e {})
 }
 
 /// Initialize a `MaybeUninit<T>` and return a owning reference to the newly initialized slot.
-pub fn try_initialize_owned<T, E>(
+pub fn try_initialize_owned<T, Error>(
     slot: &mut MaybeUninit<T>,
-    init: impl Init<T, Error = E>,
-) -> Result<OwningRef<'_, T>, E> {
+    init: impl Init<T, Error>,
+) -> Result<OwningRef<'_, T>, Error> {
     try_initialize_owned_with(slot, init, ())
 }
 
 /// Initialize a `MaybeUninit<T>` and return a owning reference to the newly initialized slot.
-pub fn initialize_owned<T>(
-    slot: &mut MaybeUninit<T>,
-    init: impl Init<T, Error = !>,
-) -> OwningRef<'_, T> {
+pub fn initialize_owned<T>(slot: &mut MaybeUninit<T>, init: impl Init<T, !>) -> OwningRef<'_, T> {
     try_initialize_owned_with(slot, init, ()).unwrap_or_else(|e| match e {})
 }
