@@ -2,7 +2,7 @@
 
 use std::{marker::PhantomPinned, pin::Pin, rc::Weak};
 
-use in_place_init::PinInit;
+use in_place_init::{PinInit, VecExt};
 
 struct SelfReferential {
     value: u32,
@@ -37,6 +37,11 @@ unsafe impl PinInit<SelfReferential> for MakeSelfReferential {
 }
 
 fn main() {
+    let mut vec: Vec<[usize; 100]> = vec![];
+    vec.push_emplace(in_place_init::array_repeat(vec.len()));
+    vec.push_emplace(in_place_init::array_repeat(vec.len()));
+    assert_eq!(vec, [[0; 100], [1; 100]]);
+
     let bx = in_place_init::new_boxed::<str>("hello, world");
     dbg!(bx);
 
