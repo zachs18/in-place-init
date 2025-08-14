@@ -17,6 +17,8 @@ pub(super) unsafe fn new_impl<T: MetaSized, E, A: Allocator, Extra>(
 ) -> Result<Box<T, A>, E> {
     use core::alloc::Layout;
     let metadata = init.metadata();
+    // SAFETY: this is unsound, size could overflow
+    // FIXME: should use checked_layout_for_meta if/when that's a thing
     let layout = unsafe {
         Layout::for_value_raw::<T>(core::ptr::from_raw_parts(core::ptr::null::<()>(), metadata))
     };

@@ -1,7 +1,11 @@
 #![feature(allocator_api)]
 #![feature(alloc_layout_extra)]
 #![feature(layout_for_ptr)]
-#![feature(ptr_metadata, sized_hierarchy, never_type, clone_to_uninit)]
+#![feature(ptr_metadata)]
+#![feature(sized_hierarchy)]
+#![feature(never_type)]
+#![feature(clone_to_uninit)]
+#![feature(doc_auto_cfg)]
 #![no_std]
 
 extern crate alloc;
@@ -43,8 +47,8 @@ pub unsafe trait PinInit<Dst: MetaSized, Extra = ()>: Sized {
     ///
     /// ## Implementors
     ///
-    /// * This method must return the same value (or diverge) each time it is called, if there are not intermediate modifications to `self`.
-    // TODO: expand on what "modifications" means: `&mut` access, not including moves or interior mutability.
+    /// * This method must return the same value (or diverge) each time it is called, if there are not intermediate modifications to `self`,
+    ///   similar to [`DerefPure`](core::ops::DerefPure).
     /// * If `Self` implements `PinInit<Dst, Extra>` for additional `Extra`, this function must return the same value (or diverge) in all such implementations.
     ///     * Note the same is not required with respect to `Dst` for types which implement `PinInit<Dst, _>` for multiple `Dst`.
     /// * If `Self` implements `Clone` (or `Copy`), then any clones (or copies) must return the same value.

@@ -2,7 +2,8 @@
 ///
 /// ## Implementors
 ///
-/// * `length` must return the same value for `self` and clones/copies of `self`, if there are no intermediate modifications
+/// * `length` must return the same value for `self` and clones/copies of `self`, if there are no intermediate modifications,
+///   similar to [`DerefPure`](core::ops::DerefPure).
 /// * `length` may panic or diverge
 pub unsafe trait Length: Copy {
     fn length(&self) -> usize;

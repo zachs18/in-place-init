@@ -9,5 +9,6 @@ in-place-init-derive = { version = "0.1.0", path = "../in-place-init-derive", op
 noop-allocator = { version = "0.1.2", default-features = false, features = ["alloc"] }
 
 [features]
+default = ["bytemuck", "macros"]
 bytemuck = ["dep:bytemuck"]
 macros = ["dep:in-place-init-derive"]
