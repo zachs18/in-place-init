@@ -147,7 +147,7 @@ fn main() {
             }),
             in_place_init::unsize(String::from("hello, world")),
         ));
-        dbg!(&bx);
+        println!("{bx:?}");
         assert_eq!(
             bx.y.downcast_ref::<String>().map(String::as_str),
             Some("hello, world")
