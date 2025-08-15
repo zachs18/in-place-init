@@ -157,16 +157,18 @@ fn main() {
 
 #[cfg(feature = "macros")]
 mod foo {
-    #[derive(in_place_init_derive::Init)]
+    use in_place_init::Init;
+
+    #[derive(Init)]
     struct Foo;
 
-    #[derive(Debug, in_place_init_derive::Init)]
+    #[derive(Debug, Init)]
     pub(crate) struct Bar<const N: usize, T: ?Sized> {
         pub x: [u8; N],
         pub y: T,
     }
 
-    #[derive(Debug, in_place_init_derive::Init)]
+    #[derive(Debug, Init)]
     pub(crate) struct Baz<T: ?Sized> {
         pub this: std::rc::Weak<Self>,
         pub tail: T,
@@ -179,13 +181,13 @@ mod foo {
         type Assoc<U: ?Sized> = u32;
     }
 
-    #[derive(Debug, in_place_init_derive::Init)]
+    #[derive(Debug, Init)]
     pub(crate) struct Quux<T: ?Sized> {
         pub foo: <Self as Trait>::Assoc<Self>,
         pub tail: T,
     }
 
-    #[derive(Debug, in_place_init_derive::Init)]
+    #[derive(Debug, Init)]
     pub(crate) struct Phooey<T>
     where
         T: ?Sized,
@@ -194,7 +196,7 @@ mod foo {
         pub tail: T,
     }
 
-    #[derive(Debug, in_place_init_derive::Init)]
+    #[derive(Debug, Init)]
     pub(crate) struct Phenomenal<T>
     where
         T: ?Sized,

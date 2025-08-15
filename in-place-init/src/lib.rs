@@ -28,6 +28,9 @@ mod allocation;
 
 mod util;
 
+#[cfg(feature = "macros")]
+pub use in_place_init_derive::Init;
+
 /// A trait for pinned in-place initializers.
 ///
 /// # Safety
