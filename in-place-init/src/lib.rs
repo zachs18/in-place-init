@@ -12,6 +12,7 @@
 extern crate alloc;
 use alloc::alloc::Allocator;
 use alloc::boxed::Box;
+use alloc::string::String;
 use alloc::vec::Vec;
 pub use noop_allocator;
 use noop_allocator::owning_ref::OwningRef;
@@ -269,6 +270,19 @@ unsafe impl<T: Clone, Error, A: Allocator> PinInit<[T], Error> for &Vec<T, A> {
     }
 }
 unsafe impl<T: Clone, Error, A: Allocator> Init<[T], Error> for &Vec<T, A> {}
+
+/// Initialize a `str` slice by copying from a `String`.
+unsafe impl<Error> PinInit<str, Error> for &String {
+    fn metadata(&self) -> usize {
+        self.len()
+    }
+
+    unsafe fn init(self, dst: *mut str, _: ()) -> Result<(), Error> {
+        // SAFETY: discharged to caller
+        unsafe { <&str as PinInit<str, Error>>::init(&*self, dst, ()) }
+    }
+}
+unsafe impl<Error> Init<str, Error> for &String {}
 
 // Initializer combinators
 
