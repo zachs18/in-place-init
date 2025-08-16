@@ -184,6 +184,18 @@ unsafe impl<T, Error, const N: usize> PinInit<[T], Error> for [T; N] {
 }
 unsafe impl<T, Error, const N: usize> Init<[T], Error> for [T; N] {}
 
+/// Initialize a slice by cloning from an array of a given length.
+unsafe impl<T: Clone, Error, const N: usize> PinInit<[T], Error> for &[T; N] {
+    fn metadata(&self) -> usize {
+        N
+    }
+    unsafe fn init(self, dst: *mut [T], _: ()) -> Result<(), Error> {
+        // SAFETY: discharged to caller
+        unsafe { <&[T] as PinInit<[T], Error>>::init(self, dst, ()) }
+    }
+}
+unsafe impl<T: Clone, Error, const N: usize> Init<[T], Error> for &[T; N] {}
+
 /// Initialize a place by cloning an existing value.
 unsafe impl<T: MetaSized + CloneToUninit, Error> PinInit<T, Error> for &T {
     fn metadata(&self) -> <T as Pointee>::Metadata {
@@ -243,7 +255,20 @@ unsafe impl<T, Error, A: Allocator> PinInit<[T], Error> for Vec<T, A> {
         Ok(())
     }
 }
-unsafe impl<T, A: Allocator> Init<[T]> for Vec<T, A> {}
+unsafe impl<T, Error, A: Allocator> Init<[T], Error> for Vec<T, A> {}
+
+/// Initialize a slice by cloning elements from a `Vec`.
+unsafe impl<T: Clone, Error, A: Allocator> PinInit<[T], Error> for &Vec<T, A> {
+    fn metadata(&self) -> usize {
+        self.len()
+    }
+
+    unsafe fn init(self, dst: *mut [T], _: ()) -> Result<(), Error> {
+        // SAFETY: discharged to caller
+        unsafe { <&[T] as PinInit<[T], Error>>::init(&**self, dst, ()) }
+    }
+}
+unsafe impl<T: Clone, Error, A: Allocator> Init<[T], Error> for &Vec<T, A> {}
 
 // Initializer combinators
 
